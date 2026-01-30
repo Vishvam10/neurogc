@@ -857,10 +857,6 @@
                 .filter(idx => dataIndex - idx < 60)
                 .map(idx => ({ x: dataIndex - idx, y: 1.5 }));
             
-            // #region agent log
-            fetch('http://127.0.0.1:7246/ingest/4e6f3008-b200-43b4-a6e4-a304a7b20197',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.html:updateGCTimeline',message:'Scatter plot data',data:{plotPointsWith:withData.length,plotPointsWithout:withoutData.length,gcEventsArrayLenWith:gcEventsWithGC.length,gcEventsArrayLenWithout:gcEventsWithoutGC.length,dataIndex},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
-            // #endregion
-            
             gcChart.data.datasets[0].data = withData;
             gcChart.data.datasets[1].data = withoutData;
             gcChart.data.datasets[0].backgroundColor = c.blue;
