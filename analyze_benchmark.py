@@ -479,7 +479,6 @@ def create_rps_plot(
 def calculate_improvement(
     with_val: float, without_val: float, lower_is_better: bool = True
 ) -> str:
-    """Calculate improvement percentage."""
     if without_val == 0:
         return "N/A"
 

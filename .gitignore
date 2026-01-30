@@ -1,4 +1,5 @@
 *.csv
+!benchmark*.csv
 *.pth
 
 # Byte-compiled / optimized / DLL files
