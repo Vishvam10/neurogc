@@ -390,28 +390,66 @@ python server_with_neurogc.py --model my_model
 
 ### Benchmarks
 
-<!-- Add benchmark results here -->
+Benchmark results are stored in the [`/benchmarks`](./benchmarks/) folder, organized by model type and date.
 
-#### Memory Usage Comparison
+#### Directory Structure
 
-<!-- ![Memory Usage](./benchmarks/memory_usage.png) -->
+```
+benchmarks/
+├── lstm/
+│   ├── 30-01-2026-14-30/
+│   │   ├── benchmark.csv
+│   │   ├── README.md
+│   │   ├── memory_usage.png
+│   │   ├── latency_comparison.png
+│   │   ├── gc_events.png
+│   │   └── rps_timeline.png
+│   └── 31-01-2026-10-15/
+│       └── ...
+├── transformer/
+│   └── ...
+└── feedforward/
+    └── ...
+```
 
-#### Latency Comparison
+Each benchmark folder contains:
 
-<!-- ![Latency Comparison](./benchmarks/latency.png) -->
+- `benchmark.csv` - Raw metrics data
+- `README.md` - Analysis summary with performance metrics, system info, and model metadata
+- Visualization PNGs (memory usage, latency comparison, GC events, RPS timeline)
 
-#### GC Event Timeline
+#### Running a Benchmark
 
-<!-- ![GC Events](./benchmarks/gc_events.png) -->
+```bash
+# Set the model name for the benchmark
+export NEUROGC_MODEL=lstm
 
-#### Performance Summary
+# Run the load test (benchmark.csv is automatically saved to benchmarks/{model}/{timestamp}/)
+locust -f locustfile.py --headless -u 20 -r 5 -t 5m
+```
 
-| Metric      | Without NeuroGC | With NeuroGC | Improvement |
-| ----------- | --------------- | ------------ | ----------- |
-| Avg Memory  | -               | -            | -           |
-| p95 Latency | -               | -            | -           |
-| p99 Latency | -               | -            | -           |
-| GC Pauses   | -               | -            | -           |
+#### Analyzing a Benchmark
+
+To analyze an existing benchmark CSV and generate visualizations:
+
+```bash
+# Auto-detect model from gc_model.pth or config.json
+python analyze_benchmark.py benchmark.csv
+
+# Specify model explicitly
+python analyze_benchmark.py benchmark.csv --model lstm
+
+# Specify custom output directory
+python analyze_benchmark.py benchmark.csv --model transformer --output benchmarks/custom
+```
+
+The analysis script generates:
+
+- Memory usage comparison chart
+- P95/P99 latency comparison charts
+- GC event timeline
+- RPS over time chart
+- README.md with performance summary table
 
 ### Linting and Formatting
 

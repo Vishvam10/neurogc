@@ -4,6 +4,8 @@ import os
 import threading
 import time
 from collections import deque
+from datetime import datetime
+from pathlib import Path
 from typing import Optional
 
 import httpx
@@ -284,12 +286,22 @@ def on_locust_init(environment, **kwargs):
         profile_collector.start()
 
 
+def get_benchmark_output_path() -> Path:
+    model_name = os.environ.get("NEUROGC_MODEL", config.get("default_model", "unknown"))
+    timestamp = datetime.now().strftime("%d-%m-%Y-%H-%M")
+    benchmark_dir = Path("benchmarks") / model_name / timestamp
+    benchmark_dir.mkdir(parents=True, exist_ok=True)
+    return benchmark_dir / "benchmark.csv"
+
+
 @events.quitting.add_listener
 def on_locust_quit(environment, **kwargs):
     global profile_collector
 
     if profile_collector:
-        profile_collector.save_to_csv("benchmark.csv")
+        output_path = get_benchmark_output_path()
+        profile_collector.save_to_csv(str(output_path))
+        print(f"[Locust] Benchmark saved to: {output_path}")
         profile_collector.stop()
 
 
@@ -332,7 +344,6 @@ def on_request(
 
 @tag("with_gc")
 class ServerWithGCUser(HttpUser):
-    """Load test user for the server WITH NeuroGC. Use --tags with_gc to run only this."""
 
     host = config.get("locust", {}).get("host_with_gc", "http://localhost:8001")
     wait_time = between(0.1, 0.5)
@@ -395,7 +406,6 @@ class ServerWithGCUser(HttpUser):
 
 @tag("without_gc")
 class ServerWithoutGCUser(HttpUser):
-    """Load test user for the server WITHOUT NeuroGC. Use --tags without_gc to run only this."""
 
     host = config.get("locust", {}).get(
         "host_without_gc", "http://localhost:8002"
