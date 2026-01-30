@@ -1,6 +1,7 @@
 ## NeuroGC
 
-An intelligent garbage collection optimization system for Python applications using machine learning. NeuroGC learns application behavior patterns and triggers garbage collection proactively to minimize latency spikes and memory pressure.
+An attempt to make a smarter garbage collection optimization system for Python applications using deep learning.
+NeuroGC learns application behavior patterns and triggers garbage collection proactively to minimize latency spikes and memory pressure.
 
 ### Table of Contents
 
@@ -8,12 +9,10 @@ An intelligent garbage collection optimization system for Python applications us
 - [Architecture](#architecture)
 - [Features](#features)
 - [Installation](#installation)
-- [Quick Start](#quick-start)
 - [Usage](#usage)
   - [Phase 1: Collect Training Data](#phase-1-collect-training-data)
   - [Phase 2: Train the Model](#phase-2-train-the-model)
   - [Phase 3: Run Comparison Benchmark](#phase-3-run-comparison-benchmark)
-- [Model Types](#model-types)
 - [Replay Mode](#replay-mode)
 - [Configuration](#configuration)
 - [Project Structure](#project-structure)
@@ -101,47 +100,24 @@ flowchart TB
 
 1. Clone the repository:
 
-```bash
-git clone https://github.com/Vishvam10/neurogc
-cd neurogc
-```
+  ```bash
+  git clone https://github.com/Vishvam10/neurogc
+  cd neurogc
+  ```
 
 2. Create virtual environment:
 
-```bash
-uv venv --python 3.11
-source .venv/bin/activate
-```
+  ```bash
+  uv venv --python 3.11
+  source .venv/bin/activate
+  ```
 
 3. Install dependencies:
 
-```bash
-uv sync
-```
+  ```bash
+  uv sync
+  ```
 
-### Quick Start
-
-```bash
-# 1. Start the control server (default GC)
-python server_without_neurogc.py
-
-# 2. Start the metrics dashboard
-python metrics_server.py
-
-# 3. Run load test to collect training data
-TARGET_SERVERS=without_gc locust -f locustfile.py --headless -u 10 -r 2 -t 2m
-
-# 4. Train a model
-python model.py --train profiler_data.csv
-
-# 5. Start the NeuroGC server
-python server_with_neurogc.py --model lstm
-
-# 6. Run comparison benchmark
-locust -f locustfile.py --headless -u 20 -r 5 -t 5m
-
-# 7. View results at http://localhost:8003
-```
 
 ### Usage
 
@@ -164,7 +140,7 @@ This generates `benchmark.csv` with profiling data.
 
 #### Phase 2: Train the Model
 
-Train any of the available models:
+Train any of the available models :
 
 ```bash
 # Train LSTM model (default)
@@ -173,83 +149,47 @@ python model.py --train profiler_data.csv
 # Or train directly from the neurogc package
 python -m neurogc.models.lstm --train profiler_data.csv
 
-# Train Transformer model
+# Train Transformer, Feedforward or Classical ML models
 python -m neurogc.models.transformer --train profiler_data.csv
-
-# Train Feedforward model
 python -m neurogc.models.feedforward --train profiler_data.csv
-
-# Train Classical ML model (Random Forest)
 python -m neurogc.models.classical --train profiler_data.csv --algorithm random_forest
 ```
 
 #### Phase 3: Run Comparison Benchmark
 
-Run both servers simultaneously:
+Run both servers simultaneously :
 
-```bash
-# Terminal 1: NeuroGC server (choose your model)
-python server_with_neurogc.py --model lstm
-# or
-python server_with_neurogc.py --model transformer
-# or
-python server_with_neurogc.py --model feedforward
-# or
-python server_with_neurogc.py --model classical
 
-# Terminal 2: Control server
-python server_without_neurogc.py
+- Terminal 1 : NeuroGC server (choose you model)
 
-# Terminal 3: Metrics dashboard
-python metrics_server.py
+  ```bash
+  python server_with_neurogc.py --model lstm
 
-# Terminal 4: Load test both
-locust -f locustfile.py --headless -u 20 -r 5 -t 5m
-```
+  # Or any of these depending on what was trained
+  python server_with_neurogc.py --model transformer
+  python server_with_neurogc.py --model feedforward
+  python server_with_neurogc.py --model classical
+  ```
 
-View dashboard at http://localhost:8003
+- Terminal 2 : Control Server :
 
-### Model Types
+  ```bash
+  python server_without_neurogc.py
+  ```
 
-#### LSTM (Default)
+- Terminal 3 : Metrics Server (And Dashboard) :
 
-Recurrent neural network that processes sequences of metrics to predict GC urgency.
+  ```bash
+  python metrics_server.py
+  ```
 
-```bash
-python server_with_neurogc.py --model lstm
-```
+- Terminal 4: Load test both
 
-Best for: Capturing temporal patterns and trends in system metrics.
+  ```bash
+  locust -f locustfile.py --headless -u 20 -r 5 -t 5m
+  ```
 
-#### Transformer
-
-Self-attention based model that can capture long-range dependencies.
-
-```bash
-python server_with_neurogc.py --model transformer
-```
-
-Best for: Complex patterns where distant metrics affect GC timing.
-
-#### Feedforward
-
-Simple MLP that uses flattened recent metrics.
-
-```bash
-python server_with_neurogc.py --model feedforward
-```
-
-Best for: Fast inference, simple deployments, baseline comparisons.
-
-#### Classical ML
-
-Traditional ML algorithms (Random Forest, Gradient Boosting, XGBoost).
-
-```bash
-python server_with_neurogc.py --model classical
-```
-
-Best for: Interpretability, when neural networks are overkill.
+  View dashboard at http://localhost:8003
 
 ### Replay Mode
 
@@ -350,43 +290,44 @@ neurogc/
 
 1. Create a new file in `neurogc/models/`:
 
-```python
-# neurogc/models/my_model.py
-from neurogc.models import register_model
-from neurogc.models.base import BaseGCPredictor, ModelMetadata
+  ```python
+  # neurogc/models/my_model.py
 
-@register_model("my_model")
-class MyPredictor(BaseGCPredictor):
-    @property
-    def metadata(self) -> ModelMetadata:
-        return ModelMetadata(
-            name="my_model",
-            version="1.0.0",
-            description="My custom GC predictor"
-        )
+  from neurogc.models import register_model
+  from neurogc.models.base import BaseGCPredictor, ModelMetadata
 
-    def train(self, data_path, **kwargs):
-        # Training logic
-        pass
+  @register_model("my_model")
+  class MyPredictor(BaseGCPredictor):
+      @property
+      def metadata(self) -> ModelMetadata:
+          return ModelMetadata(
+              name="my_model",
+              version="1.0.0",
+              description="My custom GC predictor"
+          )
 
-    def predict(self) -> float:
-        # Return GC urgency 0.0-1.0
-        pass
+      def train(self, data_path, **kwargs):
+          # Training logic
+          pass
 
-    # ... implement other required methods
-```
+      def predict(self) -> float:
+          # Return GC urgency 0.0-1.0
+          pass
+
+      # ... implement other required methods
+  ```
 
 2. Import in `neurogc/models/__init__.py`:
 
-```python
-from neurogc.models.my_model import MyPredictor
-```
+  ```python
+  from neurogc.models.my_model import MyPredictor
+  ```
 
 3. Use your model:
 
-```bash
-python server_with_neurogc.py --model my_model
-```
+  ```bash
+  python server_with_neurogc.py --model my_model
+  ```
 
 ### Benchmarks
 
@@ -451,7 +392,19 @@ The analysis script generates:
 - RPS over time chart
 - README.md with performance summary table
 
-### Linting and Formatting
+### Development
+
+#### Code Style Guidelines
+
+- Follow PEP8 conventions (enforced by Ruff)
+- Prefer type hints for all public methods and models
+- Keep model logic isolated in neurogc/models/
+- Avoid side effects in server entry points (server_with_neurogc.py, metrics_server.py)
+- Centralize configuration changes in config.json
+
+#### Linting and Formatting
+
+Kindly lint and format code before raising a PR
 
 ```bash
 # Check for issues
@@ -467,3 +420,7 @@ ruff format --config pyproject.toml
 ### License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+### Contributors
+
+[Vishvam S](https://github.com/Vishvam10)
