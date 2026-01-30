@@ -17,6 +17,7 @@ Usage:
     TARGET_SERVERS=both locust -f locustfile.py
 """
 
+import csv
 import json
 import os
 import threading
@@ -87,6 +88,9 @@ class ProfileCollector:
         self._server_metrics_with_gc: dict = {}
         self._server_metrics_without_gc: dict = {}
 
+        # Store all metrics for CSV export
+        self._all_metrics: list[dict] = []
+
     def start(self) -> None:
         self._running = True
         self.profiler.start()
@@ -100,6 +104,51 @@ class ProfileCollector:
         if self._thread:
             self._thread.join(timeout=2.0)
         print("[ProfileCollector] Stopped")
+
+    def save_to_csv(self, filepath: str = "benchmark.csv") -> None:
+        """Save all collected metrics to a CSV file."""
+        if not self._all_metrics:
+            print(f"[ProfileCollector] No metrics to save")
+            return
+
+        fieldnames = [
+            "timestamp",
+            "server",
+            "cpu",
+            "mem",
+            "disk_read",
+            "disk_write",
+            "net_sent",
+            "net_recv",
+            "rps",
+            "p95",
+            "p99",
+            "gc_triggered",
+        ]
+
+        with self._lock:
+            with open(filepath, "w", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                for m in self._all_metrics:
+                    writer.writerow(
+                        {
+                            "timestamp": m.get("time", 0),
+                            "server": m.get("server", ""),
+                            "cpu": m.get("cpu", 0),
+                            "mem": m.get("mem", 0),
+                            "disk_read": m.get("disk_read", 0),
+                            "disk_write": m.get("disk_write", 0),
+                            "net_sent": m.get("net_sent", 0),
+                            "net_recv": m.get("net_recv", 0),
+                            "rps": m.get("rps", 0),
+                            "p95": m.get("p95", 0),
+                            "p99": m.get("p99", 0),
+                            "gc_triggered": m.get("gc_triggered", False),
+                        }
+                    )
+
+        print(f"[ProfileCollector] Saved {len(self._all_metrics)} metrics to {filepath}")
 
     def record_request(self, server: str, latency_ms: float, gc_triggered: bool = False) -> None:
         with self._lock:
@@ -193,14 +242,14 @@ class ProfileCollector:
             try:
                 # Fetch actual metrics from each server
                 self._fetch_server_metrics()
-                
+
                 metrics_with_gc = self._get_metrics_for_server("with_gc")
                 metrics_without_gc = self._get_metrics_for_server("without_gc")
-                # #region agent log
-                import json as _json; open("/Users/vishvam.sundararajan/Desktop/Projects/neurogc/.cursor/debug.log", "a").write(_json.dumps({"location": "locustfile.py:_run_loop", "message": "Sending metrics", "data": {"with_gc_mem": metrics_with_gc.get("mem"), "without_gc_mem": metrics_without_gc.get("mem"), "with_gc_req_count": self._request_count_with_gc, "without_gc_req_count": self._request_count_without_gc}, "hypothesisId": "A,B", "timestamp": time.time()}) + "\n")
-                # #endregion
 
+                # Store metrics for CSV export
                 with self._lock:
+                    self._all_metrics.append(metrics_with_gc.copy())
+                    self._all_metrics.append(metrics_without_gc.copy())
                     self._last_count_with_gc = self._request_count_with_gc
                     self._last_count_without_gc = self._request_count_without_gc
                     self._last_time = time.time()
@@ -211,7 +260,7 @@ class ProfileCollector:
                         client.post(
                             f"{self.metrics_server_url}/api/metrics", json=metrics_without_gc
                         )
-                except Exception as e:
+                except Exception:
                     pass
 
             except Exception as e:
@@ -245,6 +294,7 @@ def on_locust_quit(environment, **kwargs):
     global profile_collector
 
     if profile_collector:
+        profile_collector.save_to_csv("benchmark.csv")
         profile_collector.stop()
 
 

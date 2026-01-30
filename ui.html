@@ -892,10 +892,7 @@
 
         function processMetricsUpdate(data) {
             dataIndex++;
-            // #region agent log
-            fetch('http://127.0.0.1:7246/ingest/4e6f3008-b200-43b4-a6e4-a304a7b20197',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.html:processMetricsUpdate',message:'Received update',data:{has_with_gc:!!data.with_gc,has_without_gc:!!data.without_gc,with_gc_mem:data.with_gc?.mem,without_gc_mem:data.without_gc?.mem},hypothesisId:'D',timestamp:Date.now(),sessionId:'debug-session'})}).catch(()=>{});
-            // #endregion
-            
+
             if (data.with_gc) {
                 dataWithGC.push(data.with_gc);
                 if (dataWithGC.length > maxDataPoints) dataWithGC.shift();
