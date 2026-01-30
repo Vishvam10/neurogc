@@ -1,7 +1,39 @@
 [project]
 name = "neurogc"
 version = "0.1.0"
-description = "Add your description here"
+description = "ML-based intelligent garbage collection optimization for Python applications"
 readme = "README.md"
-requires-python = ">=3.14"
-dependencies = []
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "psutil>=5.9.0",
+    "torch>=2.0.0",
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    "locust>=2.20.0",
+    "websockets>=12.0",
+    "httpx>=0.26.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+neurogc-with = "server_with_neurogc:main"
+neurogc-without = "server_without_neurogc:main"
+neurogc-metrics = "metrics_server:main"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
