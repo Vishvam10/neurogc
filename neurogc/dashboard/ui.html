@@ -600,6 +600,10 @@
         let gcEventsWithGC = [];    // Array of indices when GC triggered
         let gcEventsWithoutGC = [];
         let dataIndex = 0;  // Running counter for timeline positioning
+        
+        // Track last seen GC counts to detect NEW GC events (not repeated broadcasts)
+        let lastGcCountWith = 0;
+        let lastGcCountWithout = 0;
         let ws = null;
         let reconnectAttempts = 0;
 
@@ -853,6 +857,10 @@
                 .filter(idx => dataIndex - idx < 60)
                 .map(idx => ({ x: dataIndex - idx, y: 1.5 }));
             
+            // #region agent log
+            fetch('http://127.0.0.1:7246/ingest/4e6f3008-b200-43b4-a6e4-a304a7b20197',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.html:updateGCTimeline',message:'Scatter plot data',data:{plotPointsWith:withData.length,plotPointsWithout:withoutData.length,gcEventsArrayLenWith:gcEventsWithGC.length,gcEventsArrayLenWithout:gcEventsWithoutGC.length,dataIndex},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+            // #endregion
+            
             gcChart.data.datasets[0].data = withData;
             gcChart.data.datasets[1].data = withoutData;
             gcChart.data.datasets[0].backgroundColor = c.blue;
@@ -885,27 +893,43 @@
             document.getElementById('p99-with-gc').textContent = data.with_gc?.p99?.toFixed(1) || '--';
             document.getElementById('p99-without-gc').textContent = data.without_gc?.p99?.toFixed(1) || '--';
 
-            // Update GC counts from server
-            document.getElementById('gc-count-with').textContent = data.gc_count_with || 0;
-            document.getElementById('gc-count-without').textContent = data.gc_count_without || 0;
+            // Calculate visible GC events (those within the 60-second window shown on plot)
+            const visibleGcCountWith = gcEventsWithGC.filter(idx => dataIndex - idx < 60).length;
+            const visibleGcCountWithout = gcEventsWithoutGC.filter(idx => dataIndex - idx < 60).length;
+
+            // Update GC counts to match what's visible on the scatter plot (sliding window)
+            document.getElementById('gc-count-with').textContent = visibleGcCountWith;
+            document.getElementById('gc-count-without').textContent = visibleGcCountWithout;
         }
 
         function processMetricsUpdate(data) {
             dataIndex++;
 
+            // Detect NEW GC events by comparing server counts (not gc_triggered flag)
+            // This prevents duplicate points when the same metrics are broadcast repeatedly
+            const serverGcCountWith = data.gc_count_with || 0;
+            const serverGcCountWithout = data.gc_count_without || 0;
+            
+            const newGcEventWith = serverGcCountWith > lastGcCountWith;
+            const newGcEventWithout = serverGcCountWithout > lastGcCountWithout;
+
             if (data.with_gc) {
                 dataWithGC.push(data.with_gc);
                 if (dataWithGC.length > maxDataPoints) dataWithGC.shift();
-                if (data.with_gc.gc_triggered) {
-                    gcEventsWithGC.push(dataIndex);
-                }
             }
             if (data.without_gc) {
                 dataWithoutGC.push(data.without_gc);
                 if (dataWithoutGC.length > maxDataPoints) dataWithoutGC.shift();
-                if (data.without_gc.gc_triggered) {
-                    gcEventsWithoutGC.push(dataIndex);
-                }
+            }
+            
+            // Only add GC event to timeline if server count actually increased
+            if (newGcEventWith) {
+                gcEventsWithGC.push(dataIndex);
+                lastGcCountWith = serverGcCountWith;
+            }
+            if (newGcEventWithout) {
+                gcEventsWithoutGC.push(dataIndex);
+                lastGcCountWithout = serverGcCountWithout;
             }
             
             // Clean up old GC events (older than 60 data points)
@@ -917,26 +941,26 @@
         }
 
         function processInitialData(data) {
+            // Reset GC event tracking
+            gcEventsWithGC = [];
+            gcEventsWithoutGC = [];
+            
             if (data.with_gc?.length) {
                 dataWithGC = data.with_gc.slice(-maxDataPoints);
-                // Process GC events from history
-                data.with_gc.forEach((d, i) => {
-                    if (d.gc_triggered) {
-                        gcEventsWithGC.push(i);
-                    }
-                });
                 dataIndex = data.with_gc.length;
             }
             if (data.without_gc?.length) {
                 dataWithoutGC = data.without_gc.slice(-maxDataPoints);
-                data.without_gc.forEach((d, i) => {
-                    if (d.gc_triggered) {
-                        gcEventsWithoutGC.push(i);
-                    }
-                });
                 // Use the max of both arrays for dataIndex
                 dataIndex = Math.max(dataIndex, data.without_gc.length);
             }
+            
+            // Initialize last seen GC counts from server
+            // The scatter plot will only show NEW events from this point forward
+            // The displayed count comes from server and shows total historical events
+            lastGcCountWith = data.gc_count_with || 0;
+            lastGcCountWithout = data.gc_count_without || 0;
+            
             if (data.config) config = { ...config, ...data.config };
             
             updateAllCharts();
