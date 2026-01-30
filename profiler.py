@@ -34,49 +34,45 @@ class ProfileMetrics:
 
 class Profiler:
     """
-    System profiler for collecting performance metrics.
+    Usage :
     
-    Can be imported and used in any Python process, including FastAPI servers.
-    
-    Usage:
         profiler = Profiler()
         profiler.start()
-        
+
         # In your request handlers:
         profiler.record_request(latency_ms)
-        
+
         # To get current metrics:
         metrics = profiler.get_metrics()
-        
+
         # To save to CSV:
         profiler.save_to_csv("metrics.csv")
-        
+
         profiler.stop()
     """
 
     def __init__(self, profile_interval: float = 1.0):
-        
         self.profile_interval = profile_interval
         self._running = False
         self._lock = threading.Lock()
-        
+
         # Request tracking
         self._latencies: deque = deque(maxlen=10000)
         self._request_count = 0
         self._last_rps_time = time.time()
         self._last_request_count = 0
-        
+
         # GC tracking
         self._gc_count_before = 0
         self._gc_triggered = False
-        
+
         # Disk and network baseline (for delta calculation)
         self._disk_io_start: Optional[psutil._common.sdiskio] = None
         self._net_io_start: Optional[psutil._common.snetio] = None
         self._last_disk_io: Optional[psutil._common.sdiskio] = None
         self._last_net_io: Optional[psutil._common.snetio] = None
         self._last_snapshot_time = time.time()
-        
+
         # Current metrics
         self._current_metrics = ProfileMetrics()
 
@@ -97,10 +93,9 @@ class Profiler:
 
     def _get_gc_count(self) -> int:
         stats = gc.get_stats()
-        return sum(s.get('collections', 0) for s in stats)
+        return sum(s.get("collections", 0) for s in stats)
 
     def record_request(self, latency_ms: float) -> None:
-
         with self._lock:
             self._latencies.append(latency_ms)
             self._request_count += 1
@@ -113,13 +108,12 @@ class Profiler:
 
     def snapshot(self) -> ProfileMetrics:
         current_time = time.time()
-        
-        with self._lock:
 
+        with self._lock:
             # CPU and Memory
             cpu_percent = psutil.cpu_percent(interval=None)
             mem_percent = psutil.virtual_memory().percent
-            
+
             # Disk I/O (bytes per second since last snapshot)
             disk_io = psutil.disk_io_counters()
             time_delta = current_time - self._last_snapshot_time
@@ -131,7 +125,7 @@ class Profiler:
                 disk_write = 0.0
 
             self._last_disk_io = disk_io
-            
+
             # Network I/O (bytes per second since last snapshot)
             net_io = psutil.net_io_counters()
             if time_delta > 0 and self._last_net_io:
@@ -142,7 +136,7 @@ class Profiler:
                 net_recv = 0.0
 
             self._last_net_io = net_io
-            
+
             # RPS calculation
             rps_time_delta = current_time - self._last_rps_time
             if rps_time_delta >= self.profile_interval:
@@ -152,15 +146,15 @@ class Profiler:
             else:
                 # Use previous RPS value
                 rps = self._current_metrics.rps
-            
+
             # Calculate percentiles
             p95, p99 = self._calculate_percentiles()
-            
+
             # Check GC
             gc_triggered = self.check_gc_triggered()
-            
+
             self._last_snapshot_time = current_time
-            
+
             self._current_metrics = ProfileMetrics(
                 time=current_time,
                 cpu=cpu_percent,
@@ -172,21 +166,21 @@ class Profiler:
                 rps=rps,
                 p95=p95,
                 p99=p99,
-                gc_triggered=gc_triggered
+                gc_triggered=gc_triggered,
             )
-            
+
             return self._current_metrics
 
     def _calculate_percentiles(self) -> tuple[float, float]:
         if not self._latencies:
             return 0.0, 0.0
-        
+
         sorted_latencies = sorted(self._latencies)
         n = len(sorted_latencies)
-        
+
         p95_idx = min(int(n * 0.95), n - 1)
         p99_idx = min(int(n * 0.99), n - 1)
-        
+
         return sorted_latencies[p95_idx], sorted_latencies[p99_idx]
 
     def get_metrics(self) -> ProfileMetrics:
@@ -199,13 +193,14 @@ class Profiler:
         with self._lock:
             self._latencies.clear()
 
-    def save_to_csv(self, filepath: str) -> None:
+    def save_to_csv(self, filepath: str, overwrite: bool = False) -> None:
         metrics = self.get_metrics()
         metrics_dict = metrics.to_dict()
-        
+
         file_exists = os.path.exists(filepath)
-        
-        with open(filepath, 'a', newline='') as f:
+        file_mode = "w" if overwrite else "a"
+
+        with open(filepath, file_mode, newline="") as f:
             writer = csv.DictWriter(f, fieldnames=metrics_dict.keys())
             if not file_exists:
                 writer.writeheader()
@@ -214,43 +209,43 @@ class Profiler:
     @staticmethod
     def load_from_csv(filepath: str) -> list[ProfileMetrics]:
         metrics_list = []
-        
+
         if not os.path.exists(filepath):
             return metrics_list
-        
-        with open(filepath, 'r', newline='') as f:
+
+        with open(filepath, "r", newline="") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 # Convert types
                 converted = {
-                    'time': float(row['time']),
-                    'cpu': float(row['cpu']),
-                    'mem': float(row['mem']),
-                    'disk_read': float(row['disk_read']),
-                    'disk_write': float(row['disk_write']),
-                    'net_sent': float(row['net_sent']),
-                    'net_recv': float(row['net_recv']),
-                    'rps': float(row['rps']),
-                    'p95': float(row['p95']),
-                    'p99': float(row['p99']),
-                    'gc_triggered': row['gc_triggered'].lower() == 'true'
+                    "time": float(row["time"]),
+                    "cpu": float(row["cpu"]),
+                    "mem": float(row["mem"]),
+                    "disk_read": float(row["disk_read"]),
+                    "disk_write": float(row["disk_write"]),
+                    "net_sent": float(row["net_sent"]),
+                    "net_recv": float(row["net_recv"]),
+                    "rps": float(row["rps"]),
+                    "p95": float(row["p95"]),
+                    "p99": float(row["p99"]),
+                    "gc_triggered": row["gc_triggered"].lower() == "true",
                 }
                 metrics_list.append(ProfileMetrics.from_dict(converted))
-        
+
         return metrics_list
 
 
 class BackgroundProfiler(Profiler):
     """
     Profiler that runs in a background thread, automatically taking snapshots.
-    
+
     Usage:
         profiler = BackgroundProfiler(profile_interval=1.0)
         profiler.start()
-        
+
         # Profiler runs in background, call get_metrics() anytime
         metrics = profiler.get_metrics()
-        
+
         profiler.stop()
     """
 
@@ -289,17 +284,17 @@ def get_system_snapshot() -> ProfileMetrics:
 
 
 if __name__ == "__main__":
-
     print("Starting profiler demo ...")
-    
+
     profiler = BackgroundProfiler(profile_interval=1.0, csv_path="demo_metrics.csv")
     profiler.start()
-    
+
     import random
+
     for i in range(10):
         profiler.record_request(random.uniform(10, 100))
         time.sleep(0.5)
-    
+
     metrics = profiler.get_metrics()
     print("\nCurrent Metrics : \n")
     print(f"--- CPU : {metrics.cpu:.1f}%")
@@ -312,6 +307,6 @@ if __name__ == "__main__":
     print(f"--- P95 : {metrics.p95:.2f} ms")
     print(f"--- P99 : {metrics.p99:.2f} ms")
     print(f"--- GC Triggered : {metrics.gc_triggered}")
-    
+
     profiler.stop()
     print("\nDemo complete. Check demo_metrics.csv for saved data\n")
