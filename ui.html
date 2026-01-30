@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroGC Dashboard</title>
+    
+    <!-- Basecoat CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basecoat@0.3.10/dist/basecoat.min.css">
+    
+    <!-- D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    
+    <style>
+        :root {
+            --with-gc-color: #22c55e;
+            --without-gc-color: #ef4444;
+            --baseline-color: #f59e0b;
+            --grid-color: rgba(128, 128, 128, 0.2);
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--background);
+            color: var(--foreground);
+            margin: 0;
+            padding: 1rem;
+            min-height: 100vh;
+        }
+        
+        .dashboard {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ef4444;
+        }
+        
+        .status-dot.connected {
+            background: #22c55e;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .row {
+            display: grid;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .row-4 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+        
+        .row-2-1-1 {
+            grid-template-columns: 1fr 1fr 2fr;
+        }
+        
+        @media (max-width: 1200px) {
+            .row-4 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .row-2-1-1 {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .row-4 {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+        
+        .card-title {
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--muted-foreground);
+        }
+        
+        .chart-container {
+            height: 180px;
+            position: relative;
+        }
+        
+        .chart-container svg {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.75rem;
+            margin-top: 0.5rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 3px;
+            border-radius: 1px;
+        }
+        
+        .metrics-block {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .metric-item {
+            text-align: center;
+            padding: 0.75rem;
+            background: var(--muted);
+            border-radius: 0.375rem;
+        }
+        
+        .metric-label {
+            font-size: 0.75rem;
+            color: var(--muted-foreground);
+            margin-bottom: 0.25rem;
+        }
+        
+        .metric-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        
+        .metric-value.with-gc {
+            color: var(--with-gc-color);
+        }
+        
+        .metric-value.without-gc {
+            color: var(--without-gc-color);
+        }
+        
+        .loss-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+        
+        .loss-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .loss-label {
+            font-size: 0.875rem;
+            color: var(--muted-foreground);
+        }
+        
+        .gc-timeline {
+            height: 200px;
+        }
+        
+        .axis text {
+            fill: var(--muted-foreground);
+            font-size: 10px;
+        }
+        
+        .axis line,
+        .axis path {
+            stroke: var(--border);
+        }
+        
+        .grid line {
+            stroke: var(--grid-color);
+            stroke-dasharray: 2,2;
+        }
+        
+        .line-with-gc {
+            fill: none;
+            stroke: var(--with-gc-color);
+            stroke-width: 2;
+        }
+        
+        .line-without-gc {
+            fill: none;
+            stroke: var(--without-gc-color);
+            stroke-width: 2;
+        }
+        
+        .baseline-line {
+            fill: none;
+            stroke: var(--baseline-color);
+            stroke-width: 1;
+            stroke-dasharray: 4,4;
+        }
+        
+        .gc-marker {
+            cursor: pointer;
+        }
+        
+        .gc-marker.with-gc {
+            fill: var(--with-gc-color);
+        }
+        
+        .gc-marker.without-gc {
+            fill: var(--without-gc-color);
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: var(--popover);
+            border: 1px solid var(--border);
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+            font-size: 0.75rem;
+            pointer-events: none;
+            z-index: 100;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>NeuroGC Performance Dashboard</h1>
+            <div class="status">
+                <div class="status-dot" id="connection-status"></div>
+                <span id="status-text">Disconnected</span>
+            </div>
+        </div>
+        
+        <!-- Row 1: Performance Charts -->
+        <div class="row row-4">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">CPU Usage (%)</span>
+                </div>
+                <div class="chart-container" id="cpu-chart"></div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--with-gc-color)"></div>
+                        <span>With NeuroGC</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--without-gc-color)"></div>
+                        <span>Without NeuroGC</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Memory Usage (%)</span>
+                </div>
+                <div class="chart-container" id="memory-chart"></div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--with-gc-color)"></div>
+                        <span>With NeuroGC</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--without-gc-color)"></div>
+                        <span>Without NeuroGC</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Network I/O (KB/s)</span>
+                </div>
+                <div class="chart-container" id="network-chart"></div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--with-gc-color)"></div>
+                        <span>With NeuroGC</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--without-gc-color)"></div>
+                        <span>Without NeuroGC</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Disk I/O (KB/s)</span>
+                </div>
+                <div class="chart-container" id="disk-chart"></div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--with-gc-color)"></div>
+                        <span>With NeuroGC</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--without-gc-color)"></div>
+                        <span>Without NeuroGC</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Row 2: Metrics and GC Timeline -->
+        <div class="row row-2-1-1">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Latency Percentiles (ms)</span>
+                </div>
+                <div class="metrics-block">
+                    <div class="metric-item">
+                        <div class="metric-label">P95 (With GC)</div>
+                        <div class="metric-value with-gc" id="p95-with-gc">--</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">P95 (Without GC)</div>
+                        <div class="metric-value without-gc" id="p95-without-gc">--</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">P99 (With GC)</div>
+                        <div class="metric-value with-gc" id="p99-with-gc">--</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">P99 (Without GC)</div>
+                        <div class="metric-value without-gc" id="p99-without-gc">--</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Model Training</span>
+                </div>
+                <div class="loss-block">
+                    <div class="loss-value" id="loss-value">--</div>
+                    <div class="loss-label">Latest Loss</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">GC Events Timeline</span>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--with-gc-color); height: 8px; width: 8px; border-radius: 50%;"></div>
+                            <span>With NeuroGC (<span id="gc-count-with">0</span>)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--without-gc-color); height: 8px; width: 8px; border-radius: 50%;"></div>
+                            <span>Without NeuroGC (<span id="gc-count-without">0</span>)</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-container gc-timeline" id="gc-timeline"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tooltip" id="tooltip" style="display: none;"></div>
+
+    <script>
+        // Configuration
+        let config = {
+            profile_interval: 1.0,
+            thresholds: {
+                cpu: 80,
+                memory: 75,
+                p95: 500,
+                p99: 1000
+            }
+        };
+        
+        // Data storage
+        const maxDataPoints = 60;
+        let dataWithGC = [];
+        let dataWithoutGC = [];
+        let gcEventsWithGC = [];
+        let gcEventsWithoutGC = [];
+        
+        // WebSocket connection
+        let ws = null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 10;
+        
+        // Chart dimensions
+        const margin = { top: 10, right: 10, bottom: 25, left: 40 };
+        
+        // Initialize charts
+        function initCharts() {
+            createLineChart('cpu-chart', 'cpu', '%', [0, 100]);
+            createLineChart('memory-chart', 'mem', '%', [0, 100]);
+            createLineChart('network-chart', 'network', 'KB/s', null);
+            createLineChart('disk-chart', 'disk', 'KB/s', null);
+            createGCTimeline('gc-timeline');
+        }
+        
+        function createLineChart(containerId, dataKey, unit, yDomain) {
+            const container = document.getElementById(containerId);
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            
+            const svg = d3.select(`#${containerId}`)
+                .append('svg')
+                .attr('viewBox', `0 0 ${width} ${height}`)
+                .attr('preserveAspectRatio', 'xMidYMid meet');
+            
+            // Store references
+            svg.attr('data-key', dataKey)
+               .attr('data-unit', unit)
+               .attr('data-y-domain', yDomain ? yDomain.join(',') : 'auto');
+            
+            const g = svg.append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+            
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+            
+            // Scales
+            const xScale = d3.scaleLinear().range([0, chartWidth]);
+            const yScale = d3.scaleLinear().range([chartHeight, 0]);
+            
+            // Axes
+            g.append('g')
+                .attr('class', 'x-axis')
+                .attr('transform', `translate(0,${chartHeight})`);
+            
+            g.append('g')
+                .attr('class', 'y-axis');
+            
+            // Grid
+            g.append('g')
+                .attr('class', 'grid');
+            
+            // Baseline
+            g.append('line')
+                .attr('class', 'baseline-line')
+                .style('display', 'none');
+            
+            // Lines
+            g.append('path')
+                .attr('class', 'line-with-gc');
+            
+            g.append('path')
+                .attr('class', 'line-without-gc');
+        }
+        
+        function createGCTimeline(containerId) {
+            const container = document.getElementById(containerId);
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            
+            const svg = d3.select(`#${containerId}`)
+                .append('svg')
+                .attr('viewBox', `0 0 ${width} ${height}`)
+                .attr('preserveAspectRatio', 'xMidYMid meet');
+            
+            const g = svg.append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+            
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+            
+            // X axis
+            g.append('g')
+                .attr('class', 'x-axis')
+                .attr('transform', `translate(0,${chartHeight})`);
+            
+            // Two rows for GC events
+            g.append('g')
+                .attr('class', 'gc-with-gc')
+                .attr('transform', `translate(0,${chartHeight * 0.25})`);
+            
+            g.append('g')
+                .attr('class', 'gc-without-gc')
+                .attr('transform', `translate(0,${chartHeight * 0.75})`);
+            
+            // Labels
+            g.append('text')
+                .attr('x', -5)
+                .attr('y', chartHeight * 0.25)
+                .attr('text-anchor', 'end')
+                .attr('dominant-baseline', 'middle')
+                .attr('fill', 'var(--muted-foreground)')
+                .attr('font-size', '10px')
+                .text('With');
+            
+            g.append('text')
+                .attr('x', -5)
+                .attr('y', chartHeight * 0.75)
+                .attr('text-anchor', 'end')
+                .attr('dominant-baseline', 'middle')
+                .attr('fill', 'var(--muted-foreground)')
+                .attr('font-size', '10px')
+                .text('Without');
+        }
+        
+        function updateLineChart(containerId, dataKey) {
+            const svg = d3.select(`#${containerId} svg`);
+            const g = svg.select('g');
+            
+            const width = parseInt(svg.attr('viewBox').split(' ')[2]);
+            const height = parseInt(svg.attr('viewBox').split(' ')[3]);
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+            
+            // Get data based on key
+            let withGCData, withoutGCData;
+            
+            if (dataKey === 'cpu') {
+                withGCData = dataWithGC.map((d, i) => ({ x: i, y: d.cpu || 0 }));
+                withoutGCData = dataWithoutGC.map((d, i) => ({ x: i, y: d.cpu || 0 }));
+            } else if (dataKey === 'mem') {
+                withGCData = dataWithGC.map((d, i) => ({ x: i, y: d.mem || 0 }));
+                withoutGCData = dataWithoutGC.map((d, i) => ({ x: i, y: d.mem || 0 }));
+            } else if (dataKey === 'network') {
+                withGCData = dataWithGC.map((d, i) => ({ x: i, y: ((d.net_sent || 0) + (d.net_recv || 0)) / 1024 }));
+                withoutGCData = dataWithoutGC.map((d, i) => ({ x: i, y: ((d.net_sent || 0) + (d.net_recv || 0)) / 1024 }));
+            } else if (dataKey === 'disk') {
+                withGCData = dataWithGC.map((d, i) => ({ x: i, y: ((d.disk_read || 0) + (d.disk_write || 0)) / 1024 }));
+                withoutGCData = dataWithoutGC.map((d, i) => ({ x: i, y: ((d.disk_read || 0) + (d.disk_write || 0)) / 1024 }));
+            }
+            
+            if (!withGCData.length && !withoutGCData.length) return;
+            
+            // Scales
+            const xScale = d3.scaleLinear()
+                .domain([0, maxDataPoints - 1])
+                .range([0, chartWidth]);
+            
+            const yDomainAttr = svg.attr('data-y-domain');
+            let yDomain;
+            if (yDomainAttr && yDomainAttr !== 'auto') {
+                yDomain = yDomainAttr.split(',').map(Number);
+            } else {
+                const allValues = [...withGCData, ...withoutGCData].map(d => d.y);
+                const maxVal = Math.max(...allValues, 1);
+                yDomain = [0, maxVal * 1.1];
+            }
+            
+            const yScale = d3.scaleLinear()
+                .domain(yDomain)
+                .range([chartHeight, 0]);
+            
+            // Update axes
+            g.select('.x-axis')
+                .call(d3.axisBottom(xScale).ticks(5).tickFormat(d => `-${maxDataPoints - d}s`));
+            
+            g.select('.y-axis')
+                .call(d3.axisLeft(yScale).ticks(5));
+            
+            // Update grid
+            g.select('.grid')
+                .call(d3.axisLeft(yScale)
+                    .ticks(5)
+                    .tickSize(-chartWidth)
+                    .tickFormat(''))
+                .select('.domain')
+                .remove();
+            
+            // Update baseline
+            let baselineValue = null;
+            if (dataKey === 'cpu') baselineValue = config.thresholds?.cpu;
+            else if (dataKey === 'mem') baselineValue = config.thresholds?.memory;
+            
+            if (baselineValue !== null && baselineValue !== undefined) {
+                g.select('.baseline-line')
+                    .style('display', null)
+                    .attr('x1', 0)
+                    .attr('x2', chartWidth)
+                    .attr('y1', yScale(baselineValue))
+                    .attr('y2', yScale(baselineValue));
+            }
+            
+            // Line generator
+            const line = d3.line()
+                .x(d => xScale(d.x))
+                .y(d => yScale(d.y))
+                .curve(d3.curveMonotoneX);
+            
+            // Update lines
+            g.select('.line-with-gc')
+                .datum(withGCData)
+                .attr('d', line);
+            
+            g.select('.line-without-gc')
+                .datum(withoutGCData)
+                .attr('d', line);
+        }
+        
+        function updateGCTimeline() {
+            const svg = d3.select('#gc-timeline svg');
+            const g = svg.select('g');
+            
+            const width = parseInt(svg.attr('viewBox').split(' ')[2]);
+            const height = parseInt(svg.attr('viewBox').split(' ')[3]);
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+            
+            // X scale based on time
+            const now = Date.now() / 1000;
+            const xScale = d3.scaleLinear()
+                .domain([now - 60, now])
+                .range([0, chartWidth]);
+            
+            // Update X axis
+            g.select('.x-axis')
+                .call(d3.axisBottom(xScale)
+                    .ticks(6)
+                    .tickFormat(d => {
+                        const secsAgo = Math.round(now - d);
+                        return `-${secsAgo}s`;
+                    }));
+            
+            // Update GC events for with_gc
+            const gcWithGroup = g.select('.gc-with-gc');
+            const gcWithMarkers = gcWithGroup.selectAll('.gc-marker')
+                .data(gcEventsWithGC.filter(t => t > now - 60));
+            
+            gcWithMarkers.enter()
+                .append('circle')
+                .attr('class', 'gc-marker with-gc')
+                .attr('r', 6)
+                .merge(gcWithMarkers)
+                .attr('cx', d => xScale(d))
+                .attr('cy', 0);
+            
+            gcWithMarkers.exit().remove();
+            
+            // Update GC events for without_gc
+            const gcWithoutGroup = g.select('.gc-without-gc');
+            const gcWithoutMarkers = gcWithoutGroup.selectAll('.gc-marker')
+                .data(gcEventsWithoutGC.filter(t => t > now - 60));
+            
+            gcWithoutMarkers.enter()
+                .append('circle')
+                .attr('class', 'gc-marker without-gc')
+                .attr('r', 6)
+                .merge(gcWithoutMarkers)
+                .attr('cx', d => xScale(d))
+                .attr('cy', 0);
+            
+            gcWithoutMarkers.exit().remove();
+        }
+        
+        function updateMetrics(data) {
+            // Update latency percentiles
+            if (data.with_gc) {
+                document.getElementById('p95-with-gc').textContent = 
+                    data.with_gc.p95 ? data.with_gc.p95.toFixed(1) : '--';
+                document.getElementById('p99-with-gc').textContent = 
+                    data.with_gc.p99 ? data.with_gc.p99.toFixed(1) : '--';
+            }
+            
+            if (data.without_gc) {
+                document.getElementById('p95-without-gc').textContent = 
+                    data.without_gc.p95 ? data.without_gc.p95.toFixed(1) : '--';
+                document.getElementById('p99-without-gc').textContent = 
+                    data.without_gc.p99 ? data.without_gc.p99.toFixed(1) : '--';
+            }
+            
+            // Update loss
+            if (data.latest_loss !== undefined) {
+                const lossValue = data.latest_loss;
+                document.getElementById('loss-value').textContent = 
+                    lossValue ? lossValue.toFixed(6) : '--';
+            }
+            
+            // Update GC counts
+            document.getElementById('gc-count-with').textContent = data.gc_count_with || 0;
+            document.getElementById('gc-count-without').textContent = data.gc_count_without || 0;
+        }
+        
+        function processMetricsUpdate(data) {
+            // Add to data arrays
+            if (data.with_gc) {
+                dataWithGC.push(data.with_gc);
+                if (dataWithGC.length > maxDataPoints) {
+                    dataWithGC.shift();
+                }
+                if (data.with_gc.gc_triggered) {
+                    gcEventsWithGC.push(data.with_gc.time || Date.now() / 1000);
+                }
+            }
+            
+            if (data.without_gc) {
+                dataWithoutGC.push(data.without_gc);
+                if (dataWithoutGC.length > maxDataPoints) {
+                    dataWithoutGC.shift();
+                }
+                if (data.without_gc.gc_triggered) {
+                    gcEventsWithoutGC.push(data.without_gc.time || Date.now() / 1000);
+                }
+            }
+            
+            // Update charts
+            updateLineChart('cpu-chart', 'cpu');
+            updateLineChart('memory-chart', 'mem');
+            updateLineChart('network-chart', 'network');
+            updateLineChart('disk-chart', 'disk');
+            updateGCTimeline();
+            
+            // Update metrics display
+            updateMetrics(data);
+        }
+        
+        function processInitialData(data) {
+            // Load historical data
+            if (data.with_gc && Array.isArray(data.with_gc)) {
+                dataWithGC = data.with_gc.slice(-maxDataPoints);
+                data.with_gc.forEach(d => {
+                    if (d.gc_triggered) {
+                        gcEventsWithGC.push(d.time || Date.now() / 1000);
+                    }
+                });
+            }
+            
+            if (data.without_gc && Array.isArray(data.without_gc)) {
+                dataWithoutGC = data.without_gc.slice(-maxDataPoints);
+                data.without_gc.forEach(d => {
+                    if (d.gc_triggered) {
+                        gcEventsWithoutGC.push(d.time || Date.now() / 1000);
+                    }
+                });
+            }
+            
+            // Load config
+            if (data.config) {
+                config = { ...config, ...data.config };
+            }
+            
+            // Initial chart update
+            updateLineChart('cpu-chart', 'cpu');
+            updateLineChart('memory-chart', 'mem');
+            updateLineChart('network-chart', 'network');
+            updateLineChart('disk-chart', 'disk');
+            updateGCTimeline();
+            updateMetrics(data);
+        }
+        
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                document.getElementById('connection-status').classList.add('connected');
+                document.getElementById('status-text').textContent = 'Connected';
+                reconnectAttempts = 0;
+            };
+            
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+                document.getElementById('connection-status').classList.remove('connected');
+                document.getElementById('status-text').textContent = 'Disconnected';
+                
+                // Attempt reconnection
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+                    console.log(`Reconnecting in ${delay}ms...`);
+                    setTimeout(connectWebSocket, delay);
+                }
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    
+                    switch (message.type) {
+                        case 'initial':
+                            processInitialData(message.data);
+                            break;
+                        case 'metrics_update':
+                            processMetricsUpdate(message.data);
+                            break;
+                        case 'history':
+                            processInitialData(message.data);
+                            break;
+                        case 'ping':
+                            // Respond to ping
+                            ws.send(JSON.stringify({ type: 'pong' }));
+                            break;
+                    }
+                } catch (e) {
+                    console.error('Error processing message:', e);
+                }
+            };
+        }
+        
+        // Handle window resize
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                // Re-initialize charts on resize
+                document.querySelectorAll('.chart-container svg').forEach(svg => svg.remove());
+                initCharts();
+                
+                // Re-render with current data
+                updateLineChart('cpu-chart', 'cpu');
+                updateLineChart('memory-chart', 'mem');
+                updateLineChart('network-chart', 'network');
+                updateLineChart('disk-chart', 'disk');
+                updateGCTimeline();
+            }, 250);
+        });
+        
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            connectWebSocket();
+        });
+    </script>
+</body>
+</html>
