@@ -1,22 +1,3 @@
-"""
-Locust Load Testing Configuration for NeuroGC
-
-Usage:
-    # Test both servers (default):
-    locust -f locustfile.py
-    
-    # Test only the server without NeuroGC (for training data collection):
-    locust -f locustfile.py --tags without_gc
-    
-    # Test only the server with NeuroGC:
-    locust -f locustfile.py --tags with_gc
-    
-    # Or use environment variables:
-    TARGET_SERVERS=without_gc locust -f locustfile.py
-    TARGET_SERVERS=with_gc locust -f locustfile.py
-    TARGET_SERVERS=both locust -f locustfile.py
-"""
-
 import csv
 import json
 import os
@@ -26,10 +7,11 @@ from collections import deque
 from typing import Optional
 
 import httpx
-from locust import HttpUser, task, between, events, tag
+from locust import HttpUser, between, events, tag, task
 from locust.runners import MasterRunner, WorkerRunner
 
-from profiler import Profiler
+from neurogc.profiler import Profiler
+from neurogc.utils import calculate_percentiles
 
 
 def load_config(config_path: str = "config.json") -> dict:
@@ -164,16 +146,8 @@ class ProfileCollector:
                     self._gc_events_without_gc.append(time.time())
 
     def _calculate_percentiles(self, latencies: deque) -> tuple[float, float]:
-        if not latencies:
-            return 0.0, 0.0
-
-        sorted_latencies = sorted(latencies)
-        n = len(sorted_latencies)
-
-        p95_idx = min(int(n * 0.95), n - 1)
-        p99_idx = min(int(n * 0.99), n - 1)
-
-        return sorted_latencies[p95_idx], sorted_latencies[p99_idx]
+        """Calculate p95 and p99 latencies using shared utility."""
+        return calculate_percentiles(list(latencies))
 
     def _fetch_server_metrics(self) -> None:
         """Fetch metrics directly from each server's /metrics endpoint."""
