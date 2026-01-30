@@ -5,15 +5,7 @@
     "without_neurogc": 8002,
     "metrics_server": 8003
   },
-  "lstm_params": {
-    "input_size": 10,
-    "hidden_size": 64,
-    "num_layers": 2,
-    "sequence_length": 10,
-    "epochs": 100,
-    "learning_rate": 0.001,
-    "batch_size": 32
-  },
+  "default_model": "lstm",
   "gc_threshold": 0.7,
   "thresholds": {
     "cpu": 80.0,
@@ -31,5 +23,47 @@
     "host_with_gc": "http://localhost:8001",
     "host_without_gc": "http://localhost:8002",
     "metrics_server_url": "http://localhost:8003"
+  },
+  "models": {
+    "lstm": {
+      "input_size": 10,
+      "hidden_size": 64,
+      "num_layers": 2,
+      "sequence_length": 10,
+      "epochs": 100,
+      "learning_rate": 0.001,
+      "batch_size": 32
+    },
+    "transformer": {
+      "d_model": 64,
+      "nhead": 4,
+      "num_layers": 2,
+      "sequence_length": 10,
+      "epochs": 100,
+      "learning_rate": 0.001,
+      "batch_size": 32
+    },
+    "feedforward": {
+      "hidden_sizes": [64, 32],
+      "lookback": 5,
+      "epochs": 100,
+      "learning_rate": 0.001,
+      "batch_size": 32
+    },
+    "classical": {
+      "algorithm": "random_forest",
+      "n_estimators": 100,
+      "max_depth": null,
+      "lookback": 5
+    }
+  },
+  "lstm_params": {
+    "input_size": 10,
+    "hidden_size": 64,
+    "num_layers": 2,
+    "sequence_length": 10,
+    "epochs": 100,
+    "learning_rate": 0.001,
+    "batch_size": 32
   }
 }
