@@ -16,6 +16,7 @@ NeuroGC learns application behavior patterns and triggers garbage collection pro
 - [Replay Mode](#replay-mode)
 - [Configuration](#configuration)
 - [Project Structure](#project-structure)
+- [Development](#development)
 - [Extending NeuroGC](#extending-neurogc)
 - [Benchmarks](#benchmarks)
 - [License](#license)
@@ -284,51 +285,6 @@ neurogc/
 └── README.md
 ```
 
-### Extending NeuroGC
-
-#### Adding a Custom Model
-
-1. Create a new file in `neurogc/models/`:
-
-  ```python
-  # neurogc/models/my_model.py
-
-  from neurogc.models import register_model
-  from neurogc.models.base import BaseGCPredictor, ModelMetadata
-
-  @register_model("my_model")
-  class MyPredictor(BaseGCPredictor):
-      @property
-      def metadata(self) -> ModelMetadata:
-          return ModelMetadata(
-              name="my_model",
-              version="1.0.0",
-              description="My custom GC predictor"
-          )
-
-      def train(self, data_path, **kwargs):
-          # Training logic
-          pass
-
-      def predict(self) -> float:
-          # Return GC urgency 0.0-1.0
-          pass
-
-      # ... implement other required methods
-  ```
-
-2. Import in `neurogc/models/__init__.py`:
-
-  ```python
-  from neurogc.models.my_model import MyPredictor
-  ```
-
-3. Use your model:
-
-  ```bash
-  python server_with_neurogc.py --model my_model
-  ```
-
 ### Benchmarks
 
 Benchmark results are stored in the [`/benchmarks`](./benchmarks/) folder, organized by model type and date.
@@ -393,6 +349,49 @@ The analysis script generates:
 - README.md with performance summary table
 
 ### Development
+
+#### Extending NeuroGC (Adding a Custom Model)
+
+1. Create a new file in `neurogc/models/`:
+
+  ```python
+  # neurogc/models/my_model.py
+
+  from neurogc.models import register_model
+  from neurogc.models.base import BaseGCPredictor, ModelMetadata
+
+  @register_model("my_model")
+  class MyPredictor(BaseGCPredictor):
+      @property
+      def metadata(self) -> ModelMetadata:
+          return ModelMetadata(
+              name="my_model",
+              version="1.0.0",
+              description="My custom GC predictor"
+          )
+
+      def train(self, data_path, **kwargs):
+          # Training logic
+          pass
+
+      def predict(self) -> float:
+          # Return GC urgency 0.0-1.0
+          pass
+
+      # ... implement other required methods
+  ```
+
+2. Import in `neurogc/models/__init__.py`:
+
+  ```python
+  from neurogc.models.my_model import MyPredictor
+  ```
+
+3. Use your model:
+
+  ```bash
+  python server_with_neurogc.py --model my_model
+  ```
 
 #### Code Style Guidelines
 
