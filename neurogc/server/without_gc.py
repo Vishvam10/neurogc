@@ -11,7 +11,6 @@ from neurogc.profiler import Profiler
 from neurogc.server.base import create_app, register_common_endpoints
 from neurogc.utils import GCTracker
 
-
 _profiler: Optional[Profiler] = None
 _gc_tracker: Optional[GCTracker] = None
 _csv_path: Optional[str] = None
@@ -92,7 +91,9 @@ def create_control_server() -> FastAPI:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Control Server with default Python GC")
+    parser = argparse.ArgumentParser(
+        description="Control Server with default Python GC"
+    )
     parser.add_argument(
         "--config",
         "-c",

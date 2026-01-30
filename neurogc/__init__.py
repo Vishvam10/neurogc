@@ -1,7 +1,7 @@
 __version__ = "1.0.0"
 
 from neurogc.config import get_config, load_config
-from neurogc.profiler import Profiler, ProfileMetrics
+from neurogc.profiler import ProfileMetrics, Profiler
 
 __all__ = [
     "__version__",

@@ -19,7 +19,9 @@ if __name__ == "__main__":
 
     print("Starting profiler demo...")
 
-    profiler = BackgroundProfiler(profile_interval=1.0, csv_path="demo_metrics.csv")
+    profiler = BackgroundProfiler(
+        profile_interval=1.0, csv_path="demo_metrics.csv"
+    )
     profiler.start()
 
     for i in range(10):

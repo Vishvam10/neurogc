@@ -14,7 +14,6 @@ from neurogc.models.base import BaseGCPredictor
 from neurogc.profiler import Profiler
 from neurogc.server.base import create_app, register_common_endpoints
 
-
 _profiler: Optional[Profiler] = None
 _predictor: Optional[BaseGCPredictor] = None
 _gc_trigger_count = 0
@@ -30,14 +29,18 @@ def get_and_reset_gc_flag() -> bool:
     return flag
 
 
-def init_model(model_name: str = "lstm", model_path: Optional[str] = None) -> None:
+def init_model(
+    model_name: str = "lstm", model_path: Optional[str] = None
+) -> None:
     global _predictor, _model_available
 
     config = get_config()
     path = model_path or config.model_path
 
     if not os.path.exists(path):
-        print(f"[NeuroGC] Model not found at {path}. Running without ML-based GC.")
+        print(
+            f"[NeuroGC] Model not found at {path}. Running without ML-based GC."
+        )
         _model_available = False
         return
 
@@ -147,7 +150,9 @@ def create_neurogc_server(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="NeuroGC Server with ML-driven GC")
+    parser = argparse.ArgumentParser(
+        description="NeuroGC Server with ML-driven GC"
+    )
     parser.add_argument(
         "--model",
         "-m",

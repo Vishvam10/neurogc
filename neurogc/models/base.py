@@ -10,7 +10,9 @@ from neurogc.utils import INPUT_FEATURES
 class ModelMetadata:
     name: str
     version: str
-    input_features: list[str] = field(default_factory=lambda: INPUT_FEATURES.copy())
+    input_features: list[str] = field(
+        default_factory=lambda: INPUT_FEATURES.copy()
+    )
     sequence_length: int = 1
     description: str = ""
     supports_training: bool = True

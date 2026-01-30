@@ -131,7 +131,9 @@ def _parse_locust(data: dict) -> LocustConfig:
     return LocustConfig(
         host_with_gc=data.get("host_with_gc", "http://localhost:8001"),
         host_without_gc=data.get("host_without_gc", "http://localhost:8002"),
-        metrics_server_url=data.get("metrics_server_url", "http://localhost:8003"),
+        metrics_server_url=data.get(
+            "metrics_server_url", "http://localhost:8003"
+        ),
     )
 
 
@@ -202,7 +204,9 @@ def load_config(path: str = "config.json") -> Config:
                 config_path = alt_path
 
     if not config_path.exists():
-        print(f"[Config] Warning: Config file not found at {path}, using defaults")
+        print(
+            f"[Config] Warning: Config file not found at {path}, using defaults"
+        )
         _config = Config()
         _config_path = path
         return _config
