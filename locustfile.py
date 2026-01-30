@@ -61,6 +61,10 @@ class ProfileCollector:
         self.profile_interval = profile_interval
         self.metrics_server_url = metrics_server_url
         self.profiler = Profiler(profile_interval=profile_interval)
+        
+        # Server URLs for fetching metrics directly from each server
+        self.server_with_gc_url = config.get("locust", {}).get("host_with_gc", "http://localhost:8001")
+        self.server_without_gc_url = config.get("locust", {}).get("host_without_gc", "http://localhost:8002")
 
         self._running = False
         self._thread: Optional[threading.Thread] = None
@@ -78,6 +82,10 @@ class ProfileCollector:
         # GC tracking
         self._gc_events_with_gc: list[float] = []
         self._gc_events_without_gc: list[float] = []
+        
+        # Cached server metrics (fetched directly from servers)
+        self._server_metrics_with_gc: dict = {}
+        self._server_metrics_without_gc: dict = {}
 
     def start(self) -> None:
         self._running = True
@@ -118,12 +126,30 @@ class ProfileCollector:
 
         return sorted_latencies[p95_idx], sorted_latencies[p99_idx]
 
+    def _fetch_server_metrics(self) -> None:
+        """Fetch metrics directly from each server's /metrics endpoint."""
+        try:
+            with httpx.Client(timeout=2.0) as client:
+                try:
+                    resp = client.get(f"{self.server_with_gc_url}/metrics")
+                    if resp.status_code == 200:
+                        self._server_metrics_with_gc = resp.json()
+                except Exception:
+                    pass
+                
+                try:
+                    resp = client.get(f"{self.server_without_gc_url}/metrics")
+                    if resp.status_code == 200:
+                        self._server_metrics_without_gc = resp.json()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
     def _get_metrics_for_server(self, server: str) -> dict:
         current_time = time.time()
 
         with self._lock:
-            system_metrics = self.profiler.snapshot()
-
             time_delta = current_time - self._last_time
 
             if server == "with_gc":
@@ -131,11 +157,13 @@ class ProfileCollector:
                 count = self._request_count_with_gc
                 last_count = self._last_count_with_gc
                 gc_events = self._gc_events_with_gc
+                server_metrics = self._server_metrics_with_gc
             else:
                 latencies = self._request_latencies_without_gc
                 count = self._request_count_without_gc
                 last_count = self._last_count_without_gc
                 gc_events = self._gc_events_without_gc
+                server_metrics = self._server_metrics_without_gc
 
             rps = (count - last_count) / time_delta if time_delta > 0 else 0.0
 
@@ -144,26 +172,33 @@ class ProfileCollector:
             # Check for recent GC events
             gc_triggered = any(t > current_time - self.profile_interval for t in gc_events)
 
+            # Use server's actual metrics for cpu, mem, disk, net
             return {
                 "time": current_time,
-                "cpu": system_metrics.cpu,
-                "mem": system_metrics.mem,
-                "disk_read": system_metrics.disk_read,
-                "disk_write": system_metrics.disk_write,
-                "net_sent": system_metrics.net_sent,
-                "net_recv": system_metrics.net_recv,
+                "cpu": server_metrics.get("cpu", 0.0),
+                "mem": server_metrics.get("mem", 0.0),
+                "disk_read": server_metrics.get("disk_read", 0.0),
+                "disk_write": server_metrics.get("disk_write", 0.0),
+                "net_sent": server_metrics.get("net_sent", 0.0),
+                "net_recv": server_metrics.get("net_recv", 0.0),
                 "rps": rps,
                 "p95": p95,
                 "p99": p99,
-                "gc_triggered": gc_triggered,
+                "gc_triggered": server_metrics.get("gc_triggered", gc_triggered),
                 "server": server,
             }
 
     def _run_loop(self) -> None:
         while self._running:
             try:
+                # Fetch actual metrics from each server
+                self._fetch_server_metrics()
+                
                 metrics_with_gc = self._get_metrics_for_server("with_gc")
                 metrics_without_gc = self._get_metrics_for_server("without_gc")
+                # #region agent log
+                import json as _json; open("/Users/vishvam.sundararajan/Desktop/Projects/neurogc/.cursor/debug.log", "a").write(_json.dumps({"location": "locustfile.py:_run_loop", "message": "Sending metrics", "data": {"with_gc_mem": metrics_with_gc.get("mem"), "without_gc_mem": metrics_without_gc.get("mem"), "with_gc_req_count": self._request_count_with_gc, "without_gc_req_count": self._request_count_without_gc}, "hypothesisId": "A,B", "timestamp": time.time()}) + "\n")
+                # #endregion
 
                 with self._lock:
                     self._last_count_with_gc = self._request_count_with_gc

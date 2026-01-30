@@ -15,7 +15,7 @@
     
     <style>
         /* ========================================
-           CATPPUCCIN COLOR SCHEME
+           CATPPUCCIN COLOR SCHEME (Blue & Pink)
            ======================================== */
 
         [data-theme="dark"] {
@@ -34,21 +34,20 @@
             --text-secondary: #bac2de;
             --text-muted: #6c7086;
 
-            --accent-green: #a6e3a1;
-            --accent-red: #f2a2b3;
-            --accent-mauve: #cba6f7;
+            --accent-blue: #89b4fa;
+            --accent-pink: #f5c2e7;
             --accent-teal: #94e2d5;
 
-            --glow-green: rgba(166, 227, 161, 0.12);
+            --glow-pink: rgba(245, 194, 231, 0.12);
             --glow-blue: rgba(137, 180, 250, 0.12);
             --shadow-color: rgba(0, 0, 0, 0.4);
         }
 
         [data-theme="light"] {
             --bg-base: #eff1f5;
-            --bg-mantle: #e6e9ef;
-            --bg-crust: #dce0e8;
-            --bg-surface0: #ccd0da;
+            --bg-mantle: #fdfdfd73;
+            --bg-crust: #fdfdfd73;
+            --bg-surface0:#eff1f5cb;;
             --bg-surface1: #bcc0cc;
             --bg-surface2: #acb0be;
 
@@ -60,13 +59,12 @@
             --text-secondary: #5c5f77;
             --text-muted: #9ca0b0;
 
-            --accent-green: #8bd5a1;
-            --accent-red: #f2b3c1;
-            --accent-mauve: #b7a1f3;
+            --accent-blue: #7287fd;
+            --accent-pink: #ea76cb;
             --accent-teal: #179299;
 
-            --glow-green: rgba(139, 213, 161, 0.08);
-            --glow-blue: rgba(30, 102, 245, 0.08);
+            --glow-pink: rgba(234, 118, 203, 0.08);
+            --glow-blue: rgba(114, 135, 253, 0.08);
             --shadow-color: rgba(76, 79, 105, 0.12);
         }
 
@@ -93,7 +91,7 @@
             bottom: 0;
             background: 
                 radial-gradient(ellipse at 10% 10%, var(--glow-blue) 0%, transparent 50%),
-                radial-gradient(ellipse at 90% 90%, var(--glow-green) 0%, transparent 50%);
+                radial-gradient(ellipse at 90% 90%, var(--glow-pink) 0%, transparent 50%);
             opacity: 0.6;
             pointer-events: none;
             z-index: 0;
@@ -134,7 +132,7 @@
         .logo {
             width: 36px;
             height: 36px;
-            background: linear-gradient(135deg, var(--accent-teal), var(--accent-green));
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-pink));
             border-radius: 8px;
             display: flex;
             align-items: center;
@@ -171,12 +169,12 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: var(--accent-red);
+            background: var(--accent-pink);
             transition: all 0.3s ease;
         }
 
         .status-dot.connected {
-            background: var(--accent-green);
+            background: var(--accent-teal);
             animation: pulse 2s ease-in-out infinite;
         }
 
@@ -229,10 +227,6 @@
             box-shadow: 0 1px 16px var(--shadow-color);
         }
 
-        /* .card:hover {
-            box-shadow: 0 8px 32px var(--shadow-color);
-        } */
-
         .card-header {
             display: flex;
             justify-content: space-between;
@@ -262,14 +256,13 @@
         }
 
         .row-2 {
-            grid-template-columns: 1fr 1fr 2fr;
+            grid-template-columns: 1fr 3fr;
             margin-top: 1rem;
         }
 
         @media (max-width: 1200px) {
             .row-1 { grid-template-columns: repeat(2, 1fr); }
             .row-2 { grid-template-columns: 1fr; }
-            .gc-card { grid-column: span 1; }
         }
 
         @media (max-width: 768px) {
@@ -354,44 +347,8 @@
             font-weight: 600;
         }
 
-        .metric-value.green { color: var(--accent-green); }
-        .metric-value.red { color: var(--accent-red); }
-
-        /* ========================================
-           LOSS BLOCK
-           ======================================== */
-
-        .loss-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            gap: 0.5rem;
-        }
-
-        .loss-gauge-container {
-            width: 120px;
-            height: 70px;
-            position: relative;
-        }
-
-        .loss-gauge-container canvas {
-            width: 100% !important;
-            height: 100% !important;
-        }
-
-        .loss-value {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 1.75rem;
-            font-weight: 600;
-            color: var(--accent-mauve);
-        }
-
-        .loss-label {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-        }
+        .metric-value.blue { color: var(--accent-blue); }
+        .metric-value.pink { color: var(--accent-pink); }
 
         /* ========================================
            GC TIMELINE
@@ -477,11 +434,11 @@
                 </div>
                 <div class="chart-legend">
                     <div class="chart-legend-item">
-                        <div class="legend-dot legend-green"></div>
+                        <div class="legend-dot legend-blue"></div>
                         <span>With NeuroGC</span>
                     </div>
                     <div class="chart-legend-item">
-                        <div class="legend-dot legend-red"></div>
+                        <div class="legend-dot legend-pink"></div>
                         <span>Without</span>
                     </div>
                 </div>
@@ -496,11 +453,11 @@
                 </div>
                 <div class="chart-legend">
                     <div class="chart-legend-item">
-                        <div class="legend-dot legend-green"></div>
+                        <div class="legend-dot legend-blue"></div>
                         <span>With NeuroGC</span>
                     </div>
                     <div class="chart-legend-item">
-                        <div class="legend-dot legend-red"></div>
+                        <div class="legend-dot legend-pink"></div>
                         <span>Without</span>
                     </div>
                 </div>
@@ -515,11 +472,11 @@
                 </div>
                 <div class="chart-legend">
                     <div class="chart-legend-item">
-                        <div class="legend-dot legend-green"></div>
+                        <div class="legend-dot legend-blue"></div>
                         <span>With NeuroGC</span>
                     </div>
                     <div class="chart-legend-item">
-                        <div class="legend-dot legend-red"></div>
+                        <div class="legend-dot legend-pink"></div>
                         <span>Without</span>
                     </div>
                 </div>
@@ -534,18 +491,18 @@
                 </div>
                 <div class="chart-legend">
                     <div class="chart-legend-item">
-                        <div class="legend-dot legend-green"></div>
+                        <div class="legend-dot legend-blue"></div>
                         <span>With NeuroGC</span>
                     </div>
                     <div class="chart-legend-item">
-                        <div class="legend-dot legend-red"></div>
+                        <div class="legend-dot legend-pink"></div>
                         <span>Without</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Row 2: Metrics, Loss, GC Timeline -->
+        <!-- Row 2: Latency + GC Timeline -->
         <div class="grid row-2">
             <div class="card">
                 <div class="card-header">
@@ -556,41 +513,28 @@
                         <div class="metric-label">P95 (ms)</div>
                         <div class="metric-row">
                             <span class="metric-server">With GC</span>
-                            <span class="metric-value green" id="p95-with-gc">--</span>
+                            <span class="metric-value blue" id="p95-with-gc">--</span>
                         </div>
                         <div class="metric-row">
                             <span class="metric-server">Without</span>
-                            <span class="metric-value red" id="p95-without-gc">--</span>
+                            <span class="metric-value pink" id="p95-without-gc">--</span>
                         </div>
                     </div>
                     <div class="metric-box">
                         <div class="metric-label">P99 (ms)</div>
                         <div class="metric-row">
                             <span class="metric-server">With GC</span>
-                            <span class="metric-value green" id="p99-with-gc">--</span>
+                            <span class="metric-value blue" id="p99-with-gc">--</span>
                         </div>
                         <div class="metric-row">
                             <span class="metric-server">Without</span>
-                            <span class="metric-value red" id="p99-without-gc">--</span>
+                            <span class="metric-value pink" id="p99-without-gc">--</span>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-header">
-                    <span class="card-title">Model Loss</span>
-                </div>
-                <div class="loss-container">
-                    <div class="loss-gauge-container">
-                        <canvas id="loss-gauge"></canvas>
-                    </div>
-                    <div class="loss-value" id="loss-value">--</div>
-                    <div class="loss-label">Latest Training Loss</div>
-                </div>
-            </div>
-
-            <div class="card gc-card">
                 <div class="card-header">
                     <span class="card-title">GC Events Timeline</span>
                 </div>
@@ -599,12 +543,12 @@
                 </div>
                 <div class="gc-stats">
                     <div class="gc-stat">
-                        <div class="gc-stat-dot legend-green"></div>
+                        <div class="gc-stat-dot legend-blue"></div>
                         <span>With NeuroGC:</span>
                         <span class="gc-stat-value" id="gc-count-with">0</span>
                     </div>
                     <div class="gc-stat">
-                        <div class="gc-stat-dot legend-red"></div>
+                        <div class="gc-stat-dot legend-pink"></div>
                         <span>Without:</span>
                         <span class="gc-stat-value" id="gc-count-without">0</span>
                     </div>
@@ -615,29 +559,27 @@
 
     <script>
         // ========================================
-        // CATPPUCCIN COLORS
+        // CATPPUCCIN COLORS (Blue & Pink)
         // ========================================
         
         const themeColors = {
             dark: {
-                green: '#a6e3a1',
-                red: '#f2a2b3',
-                mauve: '#cba6f7',
+                blue: '#89b4fa',
+                pink: '#f5c2e7',
                 surface: '#313244',
                 text: '#6c7086',
                 border: 'rgba(255, 255, 255, 0.05)',
-                greenAlpha: 'rgba(166, 227, 161, 0.2)',
-                redAlpha: 'rgba(242, 162, 179, 0.2)'
+                blueAlpha: 'rgba(137, 180, 250, 0.25)',
+                pinkAlpha: 'rgba(245, 194, 231, 0.25)'
             },
             light: {
-                green: '#8bd5a1',
-                red: '#f2b3c1',
-                mauve: '#b7a1f3',
+                blue: '#7287fd',
+                pink: '#ea76cb',
                 surface: '#e6e9ef',
                 text: '#9ca0b0',
                 border: 'rgba(0, 0, 0, 0.04)',
-                greenAlpha: 'rgba(139, 213, 161, 0.25)',
-                redAlpha: 'rgba(242, 179, 193, 0.25)'
+                blueAlpha: 'rgba(114, 135, 253, 0.3)',
+                pinkAlpha: 'rgba(234, 118, 203, 0.3)'
             }
         };
 
@@ -654,13 +596,15 @@
         const maxDataPoints = 60;
         let dataWithGC = [];
         let dataWithoutGC = [];
-        let gcEventsWithGC = [];
+        // Track GC events by index (position in the data stream) instead of timestamps
+        let gcEventsWithGC = [];    // Array of indices when GC triggered
         let gcEventsWithoutGC = [];
+        let dataIndex = 0;  // Running counter for timeline positioning
         let ws = null;
         let reconnectAttempts = 0;
 
         // Chart instances
-        let cpuChart, memoryChart, networkChart, diskChart, gcChart, lossChart;
+        let cpuChart, memoryChart, networkChart, diskChart, gcChart;
 
         // ========================================
         // THEME
@@ -684,8 +628,8 @@
 
         function updateLegendColors() {
             const c = getColors();
-            document.querySelectorAll('.legend-green').forEach(el => el.style.background = c.green);
-            document.querySelectorAll('.legend-red').forEach(el => el.style.background = c.red);
+            document.querySelectorAll('.legend-blue').forEach(el => el.style.background = c.blue);
+            document.querySelectorAll('.legend-pink').forEach(el => el.style.background = c.pink);
         }
 
         document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
@@ -694,8 +638,9 @@
         // CHART HELPERS
         // ========================================
         
-        function createGradient(ctx, color, alphaColor) {
-            const gradient = ctx.createLinearGradient(0, 0, 0, ctx.canvas.height);
+        function createGradient(ctx, alphaColor) {
+            // Use fixed height (180px from .chart-container) for uniform gradients
+            const gradient = ctx.createLinearGradient(0, 0, 0, 180);
             gradient.addColorStop(0, alphaColor);
             gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
             return gradient;
@@ -762,8 +707,8 @@
                         {
                             label: 'With NeuroGC',
                             data: [],
-                            borderColor: c.green,
-                            backgroundColor: createGradient(ctx, c.green, c.greenAlpha),
+                            borderColor: c.blue,
+                            backgroundColor: createGradient(ctx, c.blueAlpha),
                             borderWidth: 2,
                             fill: true,
                             tension: 0.4,
@@ -773,8 +718,8 @@
                         {
                             label: 'Without NeuroGC',
                             data: [],
-                            borderColor: c.red,
-                            backgroundColor: createGradient(ctx, c.red, c.redAlpha),
+                            borderColor: c.pink,
+                            backgroundColor: createGradient(ctx, c.pinkAlpha),
                             borderWidth: 2,
                             fill: true,
                             tension: 0.4,
@@ -804,10 +749,10 @@
             chart.data.datasets[1].data = padded(withoutData);
             
             // Update colors
-            chart.data.datasets[0].borderColor = c.green;
-            chart.data.datasets[0].backgroundColor = createGradient(ctx, c.green, c.greenAlpha);
-            chart.data.datasets[1].borderColor = c.red;
-            chart.data.datasets[1].backgroundColor = createGradient(ctx, c.red, c.redAlpha);
+            chart.data.datasets[0].borderColor = c.blue;
+            chart.data.datasets[0].backgroundColor = createGradient(ctx, c.blueAlpha);
+            chart.data.datasets[1].borderColor = c.pink;
+            chart.data.datasets[1].backgroundColor = createGradient(ctx, c.pinkAlpha);
             
             // Update scale colors
             chart.options.scales.x.grid.color = c.border;
@@ -835,18 +780,18 @@
                         {
                             label: 'With NeuroGC',
                             data: [],
-                            backgroundColor: c.green,
-                            borderColor: c.green,
-                            pointRadius: 6,
-                            pointHoverRadius: 8
+                            backgroundColor: c.blue,
+                            borderColor: c.blue,
+                            pointRadius: 8,
+                            pointHoverRadius: 10
                         },
                         {
                             label: 'Without NeuroGC',
                             data: [],
-                            backgroundColor: c.red,
-                            borderColor: c.red,
-                            pointRadius: 6,
-                            pointHoverRadius: 8
+                            backgroundColor: c.pink,
+                            borderColor: c.pink,
+                            pointRadius: 8,
+                            pointHoverRadius: 10
                         }
                     ]
                 },
@@ -885,6 +830,7 @@
                             ticks: {
                                 color: c.text,
                                 font: { size: 9 },
+                                stepSize: 1,
                                 callback: (val) => val === 0.5 ? 'With' : val === 1.5 ? 'Without' : ''
                             }
                         }
@@ -896,70 +842,29 @@
         function updateGCTimeline() {
             if (!gcChart) return;
             const c = getColors();
-            const now = Date.now() / 1000;
             
-            // Convert timestamps to seconds ago, filter to last 60s
+            // Convert indices to "seconds ago" based on current dataIndex
+            // Each data point represents ~1 second (profile_interval)
             const withData = gcEventsWithGC
-                .filter(t => now - t < 60)
-                .map(t => ({ x: now - t, y: 0.5 }));
+                .filter(idx => dataIndex - idx < 60)
+                .map(idx => ({ x: dataIndex - idx, y: 0.5 }));
             
             const withoutData = gcEventsWithoutGC
-                .filter(t => now - t < 60)
-                .map(t => ({ x: now - t, y: 1.5 }));
+                .filter(idx => dataIndex - idx < 60)
+                .map(idx => ({ x: dataIndex - idx, y: 1.5 }));
             
             gcChart.data.datasets[0].data = withData;
             gcChart.data.datasets[1].data = withoutData;
-            gcChart.data.datasets[0].backgroundColor = c.green;
-            gcChart.data.datasets[0].borderColor = c.green;
-            gcChart.data.datasets[1].backgroundColor = c.red;
-            gcChart.data.datasets[1].borderColor = c.red;
+            gcChart.data.datasets[0].backgroundColor = c.blue;
+            gcChart.data.datasets[0].borderColor = c.blue;
+            gcChart.data.datasets[1].backgroundColor = c.pink;
+            gcChart.data.datasets[1].borderColor = c.pink;
             
             gcChart.options.scales.x.grid.color = c.border;
             gcChart.options.scales.x.ticks.color = c.text;
             gcChart.options.scales.y.ticks.color = c.text;
             
             gcChart.update('none');
-        }
-
-        // ========================================
-        // LOSS GAUGE (Doughnut)
-        // ========================================
-        
-        function createLossGauge() {
-            const ctx = document.getElementById('loss-gauge').getContext('2d');
-            const c = getColors();
-            
-            return new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    datasets: [{
-                        data: [0, 100],
-                        backgroundColor: [c.mauve, c.surface],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    circumference: 180,
-                    rotation: 270,
-                    cutout: '75%',
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { enabled: false }
-                    }
-                }
-            });
-        }
-
-        function updateLossGauge(value) {
-            if (!lossChart) return;
-            const c = getColors();
-            const pct = Math.min(Math.max(value * 100, 0), 100);
-            
-            lossChart.data.datasets[0].data = [pct, 100 - pct];
-            lossChart.data.datasets[0].backgroundColor = [c.mauve, c.surface];
-            lossChart.update('none');
         }
 
         // ========================================
@@ -980,26 +885,36 @@
             document.getElementById('p99-with-gc').textContent = data.with_gc?.p99?.toFixed(1) || '--';
             document.getElementById('p99-without-gc').textContent = data.without_gc?.p99?.toFixed(1) || '--';
 
-            if (data.latest_loss > 0) {
-                document.getElementById('loss-value').textContent = data.latest_loss.toFixed(6);
-                updateLossGauge(data.latest_loss);
-            }
-
-            document.getElementById('gc-count-with').textContent = data.gc_count_with || gcEventsWithGC.length;
-            document.getElementById('gc-count-without').textContent = data.gc_count_without || gcEventsWithoutGC.length;
+            // Update GC counts from server
+            document.getElementById('gc-count-with').textContent = data.gc_count_with || 0;
+            document.getElementById('gc-count-without').textContent = data.gc_count_without || 0;
         }
 
         function processMetricsUpdate(data) {
+            dataIndex++;
+            // #region agent log
+            fetch('http://127.0.0.1:7246/ingest/4e6f3008-b200-43b4-a6e4-a304a7b20197',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.html:processMetricsUpdate',message:'Received update',data:{has_with_gc:!!data.with_gc,has_without_gc:!!data.without_gc,with_gc_mem:data.with_gc?.mem,without_gc_mem:data.without_gc?.mem},hypothesisId:'D',timestamp:Date.now(),sessionId:'debug-session'})}).catch(()=>{});
+            // #endregion
+            
             if (data.with_gc) {
                 dataWithGC.push(data.with_gc);
                 if (dataWithGC.length > maxDataPoints) dataWithGC.shift();
-                if (data.with_gc.gc_triggered) gcEventsWithGC.push(data.with_gc.time || Date.now() / 1000);
+                if (data.with_gc.gc_triggered) {
+                    gcEventsWithGC.push(dataIndex);
+                }
             }
             if (data.without_gc) {
                 dataWithoutGC.push(data.without_gc);
                 if (dataWithoutGC.length > maxDataPoints) dataWithoutGC.shift();
-                if (data.without_gc.gc_triggered) gcEventsWithoutGC.push(data.without_gc.time || Date.now() / 1000);
+                if (data.without_gc.gc_triggered) {
+                    gcEventsWithoutGC.push(dataIndex);
+                }
             }
+            
+            // Clean up old GC events (older than 60 data points)
+            gcEventsWithGC = gcEventsWithGC.filter(idx => dataIndex - idx < 60);
+            gcEventsWithoutGC = gcEventsWithoutGC.filter(idx => dataIndex - idx < 60);
+            
             updateAllCharts();
             updateMetrics(data);
         }
@@ -1007,17 +922,26 @@
         function processInitialData(data) {
             if (data.with_gc?.length) {
                 dataWithGC = data.with_gc.slice(-maxDataPoints);
-                data.with_gc.forEach(d => {
-                    if (d.gc_triggered) gcEventsWithGC.push(d.time || Date.now() / 1000);
+                // Process GC events from history
+                data.with_gc.forEach((d, i) => {
+                    if (d.gc_triggered) {
+                        gcEventsWithGC.push(i);
+                    }
                 });
+                dataIndex = data.with_gc.length;
             }
             if (data.without_gc?.length) {
                 dataWithoutGC = data.without_gc.slice(-maxDataPoints);
-                data.without_gc.forEach(d => {
-                    if (d.gc_triggered) gcEventsWithoutGC.push(d.time || Date.now() / 1000);
+                data.without_gc.forEach((d, i) => {
+                    if (d.gc_triggered) {
+                        gcEventsWithoutGC.push(i);
+                    }
                 });
+                // Use the max of both arrays for dataIndex
+                dataIndex = Math.max(dataIndex, data.without_gc.length);
             }
             if (data.config) config = { ...config, ...data.config };
+            
             updateAllCharts();
             updateMetrics(data);
         }
@@ -1090,7 +1014,6 @@
             networkChart = createLineChart('network-chart');
             diskChart = createLineChart('disk-chart');
             gcChart = createGCTimeline();
-            lossChart = createLossGauge();
         }
 
         document.addEventListener('DOMContentLoaded', () => {
