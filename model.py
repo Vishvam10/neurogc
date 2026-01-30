@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 from neurogc.models.lstm import (
-    GCDataset,
-    LSTMNetwork as GCPredictor,
-    LSTMPredictor as GCPredictorWrapper,
     load_model,
     train_model,
 )
@@ -20,11 +17,21 @@ def predict(metrics: dict, model_path: str = "gc_model.pth") -> float:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Train or test GC predictor model")
-    parser.add_argument("--train", type=str, help="Path to CSV file for training")
-    parser.add_argument("--config", type=str, default="config.json", help="Path to config file")
-    parser.add_argument("--model", type=str, default="gc_model.pth", help="Path to model file")
-    parser.add_argument("--test", action="store_true", help="Test the model with sample data")
+    parser = argparse.ArgumentParser(
+        description="Train or test GC predictor model"
+    )
+    parser.add_argument(
+        "--train", type=str, help="Path to CSV file for training"
+    )
+    parser.add_argument(
+        "--config", type=str, default="config.json", help="Path to config file"
+    )
+    parser.add_argument(
+        "--model", type=str, default="gc_model.pth", help="Path to model file"
+    )
+    parser.add_argument(
+        "--test", action="store_true", help="Test the model with sample data"
+    )
 
     args = parser.parse_args()
 

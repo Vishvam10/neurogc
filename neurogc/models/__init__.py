@@ -23,7 +23,9 @@ def register_model(name: str):
 def get_model(name: str) -> Type[BaseGCPredictor]:
     if name not in _registry:
         available = ", ".join(_registry.keys()) or "none"
-        raise ValueError(f"Unknown model: '{name}'. Available models: {available}")
+        raise ValueError(
+            f"Unknown model: '{name}'. Available models: {available}"
+        )
     return _registry[name]
 
 
@@ -40,10 +42,11 @@ def get_model_metadata(name: str) -> ModelMetadata:
 
 register_model("dummy")(DummyPredictor)
 
+# ruff: noqa: E402
+from neurogc.models.classical import ClassicalPredictor
+from neurogc.models.feedforward import FeedforwardPredictor
 from neurogc.models.lstm import LSTMPredictor
 from neurogc.models.transformer import TransformerPredictor
-from neurogc.models.feedforward import FeedforwardPredictor
-from neurogc.models.classical import ClassicalPredictor
 
 __all__ = [
     "register_model",

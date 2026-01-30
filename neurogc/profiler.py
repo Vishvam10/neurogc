@@ -31,7 +31,9 @@ class ProfileMetrics:
 
     @classmethod
     def from_dict(cls, data: dict) -> "ProfileMetrics":
-        return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+        return cls(
+            **{k: v for k, v in data.items() if k in cls.__dataclass_fields__}
+        )
 
 
 class Profiler:
@@ -96,8 +98,12 @@ class Profiler:
             disk_io = psutil.disk_io_counters()
             time_delta = current_time - self._last_snapshot_time
             if time_delta > 0 and self._last_disk_io:
-                disk_read = (disk_io.read_bytes - self._last_disk_io.read_bytes) / time_delta
-                disk_write = (disk_io.write_bytes - self._last_disk_io.write_bytes) / time_delta
+                disk_read = (
+                    disk_io.read_bytes - self._last_disk_io.read_bytes
+                ) / time_delta
+                disk_write = (
+                    disk_io.write_bytes - self._last_disk_io.write_bytes
+                ) / time_delta
             else:
                 disk_read = 0.0
                 disk_write = 0.0
@@ -106,8 +112,12 @@ class Profiler:
 
             net_io = psutil.net_io_counters()
             if time_delta > 0 and self._last_net_io:
-                net_sent = (net_io.bytes_sent - self._last_net_io.bytes_sent) / time_delta
-                net_recv = (net_io.bytes_recv - self._last_net_io.bytes_recv) / time_delta
+                net_sent = (
+                    net_io.bytes_sent - self._last_net_io.bytes_sent
+                ) / time_delta
+                net_recv = (
+                    net_io.bytes_recv - self._last_net_io.bytes_recv
+                ) / time_delta
             else:
                 net_sent = 0.0
                 net_recv = 0.0
@@ -116,7 +126,9 @@ class Profiler:
 
             rps_time_delta = current_time - self._last_rps_time
             if rps_time_delta >= self.profile_interval:
-                rps = (self._request_count - self._last_request_count) / rps_time_delta
+                rps = (
+                    self._request_count - self._last_request_count
+                ) / rps_time_delta
                 self._last_request_count = self._request_count
                 self._last_rps_time = current_time
             else:
@@ -196,7 +208,9 @@ class Profiler:
 
 
 class BackgroundProfiler(Profiler):
-    def __init__(self, profile_interval: float = 1.0, csv_path: Optional[str] = None):
+    def __init__(
+        self, profile_interval: float = 1.0, csv_path: Optional[str] = None
+    ):
         super().__init__(profile_interval)
         self._csv_path = csv_path
         self._thread: Optional[threading.Thread] = None
@@ -233,7 +247,9 @@ if __name__ == "__main__":
 
     print("Starting profiler demo...")
 
-    profiler = BackgroundProfiler(profile_interval=1.0, csv_path="demo_metrics.csv")
+    profiler = BackgroundProfiler(
+        profile_interval=1.0, csv_path="demo_metrics.csv"
+    )
     profiler.start()
 
     for i in range(10):

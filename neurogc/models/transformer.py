@@ -22,7 +22,9 @@ class PositionalEncoding(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
 
         position = torch.arange(max_len).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model))
+        div_term = torch.exp(
+            torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model)
+        )
         pe = torch.zeros(max_len, 1, d_model)
         pe[:, 0, 0::2] = torch.sin(position * div_term)
         pe[:, 0, 1::2] = torch.cos(position * div_term)
@@ -59,7 +61,9 @@ class TransformerNetwork(nn.Module):
             dropout=dropout,
             batch_first=True,
         )
-        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+        self.transformer_encoder = nn.TransformerEncoder(
+            encoder_layer, num_layers=num_layers
+        )
 
         self.fc = nn.Linear(d_model, 1)
         self.sigmoid = nn.Sigmoid()
@@ -100,7 +104,9 @@ class TransformerDataset(Dataset):
             self.feature_means = self.features.mean(axis=0)
             self.feature_stds = self.features.std(axis=0)
             self.feature_stds[self.feature_stds == 0] = 1.0
-            self.features = (self.features - self.feature_means) / self.feature_stds
+            self.features = (
+                self.features - self.feature_means
+            ) / self.feature_stds
 
         self._create_targets()
 
@@ -111,7 +117,9 @@ class TransformerDataset(Dataset):
         gc_recent = df["gc_triggered"].astype(float).values
 
         self.targets = np.clip(
-            0.4 * mem_pressure + 0.3 * cpu_factor + 0.3 * (1 - gc_recent * 0.5), 0.0, 1.0
+            0.4 * mem_pressure + 0.3 * cpu_factor + 0.3 * (1 - gc_recent * 0.5),
+            0.0,
+            1.0,
         ).astype(np.float32)
 
     def __len__(self) -> int:
@@ -122,7 +130,9 @@ class TransformerDataset(Dataset):
         y = torch.tensor([self.targets[idx + self.sequence_length - 1]])
         return x, y
 
-    def get_normalization_params(self) -> tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+    def get_normalization_params(
+        self,
+    ) -> tuple[Optional[np.ndarray], Optional[np.ndarray]]:
         return self.feature_means, self.feature_stds
 
 
@@ -163,7 +173,9 @@ class TransformerPredictor(BaseGCPredictor):
         learning_rate = kwargs.get("learning_rate", self.config.learning_rate)
         batch_size = kwargs.get("batch_size", self.config.batch_size)
 
-        dataset = TransformerDataset(str(data_path), sequence_length=self.config.sequence_length)
+        dataset = TransformerDataset(
+            str(data_path), sequence_length=self.config.sequence_length
+        )
 
         if len(dataset) == 0:
             actual_rows = len(dataset.df) if hasattr(dataset, "df") else 0
@@ -211,7 +223,9 @@ class TransformerPredictor(BaseGCPredictor):
             if (epoch + 1) % 10 == 0:
                 print(f"Epoch [{epoch + 1}/{epochs}], Loss: {avg_loss:.6f}")
 
-        self._feature_means, self._feature_stds = dataset.get_normalization_params()
+        self._feature_means, self._feature_stds = (
+            dataset.get_normalization_params()
+        )
         self._is_loaded = True
 
         return TrainingResult(
@@ -237,10 +251,14 @@ class TransformerPredictor(BaseGCPredictor):
                 },
                 "norm_params": {
                     "feature_means": (
-                        self._feature_means.tolist() if self._feature_means is not None else None
+                        self._feature_means.tolist()
+                        if self._feature_means is not None
+                        else None
                     ),
                     "feature_stds": (
-                        self._feature_stds.tolist() if self._feature_stds is not None else None
+                        self._feature_stds.tolist()
+                        if self._feature_stds is not None
+                        else None
                     ),
                     "sequence_length": self.config.sequence_length,
                 },
@@ -250,7 +268,9 @@ class TransformerPredictor(BaseGCPredictor):
         print(f"[Transformer] Model saved to {path}")
 
     def load(self, path: Path) -> None:
-        checkpoint = torch.load(str(path), map_location=self._device, weights_only=False)
+        checkpoint = torch.load(
+            str(path), map_location=self._device, weights_only=False
+        )
 
         model_config = checkpoint["config"]
         norm_params = checkpoint.get("norm_params", {})
@@ -267,7 +287,9 @@ class TransformerPredictor(BaseGCPredictor):
 
         feature_means = norm_params.get("feature_means")
         feature_stds = norm_params.get("feature_stds")
-        sequence_length = norm_params.get("sequence_length", self.config.sequence_length)
+        sequence_length = norm_params.get(
+            "sequence_length", self.config.sequence_length
+        )
 
         if feature_means:
             self._feature_means = np.array(feature_means, dtype=np.float32)
@@ -291,7 +313,11 @@ class TransformerPredictor(BaseGCPredictor):
         if self._feature_means is not None and self._feature_stds is not None:
             features = (features - self._feature_means) / self._feature_stds
 
-        x = torch.tensor(features, dtype=torch.float32).unsqueeze(0).to(self._device)
+        x = (
+            torch.tensor(features, dtype=torch.float32)
+            .unsqueeze(0)
+            .to(self._device)
+        )
 
         with torch.no_grad():
             output = self._model(x)
@@ -299,7 +325,10 @@ class TransformerPredictor(BaseGCPredictor):
         return output.item()
 
     def can_predict(self) -> bool:
-        return len(self._buffer) >= self.config.sequence_length and self._model is not None
+        return (
+            len(self._buffer) >= self.config.sequence_length
+            and self._model is not None
+        )
 
     def add_metrics(self, metrics: dict) -> None:
         features = np.array(
@@ -314,9 +343,18 @@ class TransformerPredictor(BaseGCPredictor):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Train or test Transformer GC predictor")
-    parser.add_argument("--train", type=str, help="Path to CSV file for training")
-    parser.add_argument("--model", type=str, default="gc_model_transformer.pth", help="Model path")
+    parser = argparse.ArgumentParser(
+        description="Train or test Transformer GC predictor"
+    )
+    parser.add_argument(
+        "--train", type=str, help="Path to CSV file for training"
+    )
+    parser.add_argument(
+        "--model",
+        type=str,
+        default="gc_model_transformer.pth",
+        help="Model path",
+    )
     parser.add_argument("--test", action="store_true", help="Test the model")
 
     args = parser.parse_args()
@@ -333,9 +371,18 @@ if __name__ == "__main__":
         try:
             predictor = TransformerPredictor()
             predictor.load(Path(args.model))
-            sample = {"cpu": 45.0, "mem": 60.0, "disk_read": 1e6, "disk_write": 5e5,
-                      "net_sent": 1e5, "net_recv": 2e5, "rps": 100.0, "p95": 50.0,
-                      "p99": 100.0, "gc_triggered": False}
+            sample = {
+                "cpu": 45.0,
+                "mem": 60.0,
+                "disk_read": 1e6,
+                "disk_write": 5e5,
+                "net_sent": 1e5,
+                "net_recv": 2e5,
+                "rps": 100.0,
+                "p95": 50.0,
+                "p99": 100.0,
+                "gc_triggered": False,
+            }
             for _ in range(predictor.config.sequence_length):
                 predictor.add_metrics(sample)
             print(f"GC Urgency Prediction: {predictor.predict():.4f}")

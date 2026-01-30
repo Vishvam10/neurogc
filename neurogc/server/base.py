@@ -134,8 +134,12 @@ class Workloads:
             large_list = [random.random() for _ in range(10000)]
             data_list.append(large_list)
 
-        large_dict = {f"key_{i}": [random.random() for _ in range(100)] for i in range(1000)}
+        large_dict = {
+            f"key_{i}": [random.random() for _ in range(100)]
+            for i in range(1000)
+        }
 
+        # ruff: noqa: F841
         nested = {
             "level1": {
                 f"item_{i}": {
@@ -146,7 +150,9 @@ class Workloads:
             }
         }
 
-        total_elements = sum(len(lst) for lst in data_list) + len(large_dict) * 100
+        total_elements = (
+            sum(len(lst) for lst in data_list) + len(large_dict) * 100
+        )
 
         return {
             "total_elements": total_elements,
@@ -164,8 +170,12 @@ class Workloads:
 
         async with httpx.AsyncClient() as client:
             try:
-                response = await client.get("https://httpbin.org/get", timeout=2.0)
-                results.append({"status": response.status_code, "source": "httpbin"})
+                response = await client.get(
+                    "https://httpbin.org/get", timeout=2.0
+                )
+                results.append(
+                    {"status": response.status_code, "source": "httpbin"}
+                )
             except Exception as e:
                 results.append({"error": str(e), "source": "httpbin"})
 
@@ -181,9 +191,14 @@ class Workloads:
 
     @staticmethod
     def io_heavy() -> dict:
-        with tempfile.NamedTemporaryFile(mode="w+", delete=True, suffix=".txt") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w+", delete=True, suffix=".txt"
+        ) as f:
             data_to_write = "\n".join(
-                [f"Line {i}: {'x' * random.randint(100, 500)}" for i in range(1000)]
+                [
+                    f"Line {i}: {'x' * random.randint(100, 500)}"
+                    for i in range(1000)
+                ]
             )
             f.write(data_to_write)
             f.flush()

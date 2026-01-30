@@ -8,7 +8,7 @@ from typing import Optional
 
 import httpx
 from locust import HttpUser, between, events, tag, task
-from locust.runners import MasterRunner, WorkerRunner
+from locust.runners import WorkerRunner
 
 from neurogc.profiler import Profiler
 from neurogc.utils import calculate_percentiles
@@ -39,15 +39,21 @@ TARGET_SERVERS = os.environ.get("TARGET_SERVERS", "both").lower()
 # background thread, collecting metrics every profile_interval seconds.
 class ProfileCollector:
     def __init__(
-        self, profile_interval: float = 1.0, metrics_server_url: str = "http://localhost:8003"
+        self,
+        profile_interval: float = 1.0,
+        metrics_server_url: str = "http://localhost:8003",
     ):
         self.profile_interval = profile_interval
         self.metrics_server_url = metrics_server_url
         self.profiler = Profiler(profile_interval=profile_interval)
-        
+
         # Server URLs for fetching metrics directly from each server
-        self.server_with_gc_url = config.get("locust", {}).get("host_with_gc", "http://localhost:8001")
-        self.server_without_gc_url = config.get("locust", {}).get("host_without_gc", "http://localhost:8002")
+        self.server_with_gc_url = config.get("locust", {}).get(
+            "host_with_gc", "http://localhost:8001"
+        )
+        self.server_without_gc_url = config.get("locust", {}).get(
+            "host_without_gc", "http://localhost:8002"
+        )
 
         self._running = False
         self._thread: Optional[threading.Thread] = None
@@ -65,7 +71,7 @@ class ProfileCollector:
         # GC tracking
         self._gc_events_with_gc: list[float] = []
         self._gc_events_without_gc: list[float] = []
-        
+
         # Cached server metrics (fetched directly from servers)
         self._server_metrics_with_gc: dict = {}
         self._server_metrics_without_gc: dict = {}
@@ -78,7 +84,9 @@ class ProfileCollector:
         self.profiler.start()
         self._thread = threading.Thread(target=self._run_loop, daemon=True)
         self._thread.start()
-        print(f"[ProfileCollector] Started. Posting to {self.metrics_server_url}")
+        print(
+            f"[ProfileCollector] Started. Posting to {self.metrics_server_url}"
+        )
 
     def stop(self) -> None:
         self._running = False
@@ -90,7 +98,7 @@ class ProfileCollector:
     def save_to_csv(self, filepath: str = "benchmark.csv") -> None:
         """Save all collected metrics to a CSV file."""
         if not self._all_metrics:
-            print(f"[ProfileCollector] No metrics to save")
+            print("[ProfileCollector] No metrics to save")
             return
 
         fieldnames = [
@@ -130,9 +138,13 @@ class ProfileCollector:
                         }
                     )
 
-        print(f"[ProfileCollector] Saved {len(self._all_metrics)} metrics to {filepath}")
+        print(
+            f"[ProfileCollector] Saved {len(self._all_metrics)} metrics to {filepath}"
+        )
 
-    def record_request(self, server: str, latency_ms: float, gc_triggered: bool = False) -> None:
+    def record_request(
+        self, server: str, latency_ms: float, gc_triggered: bool = False
+    ) -> None:
         with self._lock:
             if server == "with_gc":
                 self._request_latencies_with_gc.append(latency_ms)
@@ -159,7 +171,7 @@ class ProfileCollector:
                         self._server_metrics_with_gc = resp.json()
                 except Exception:
                     pass
-                
+
                 try:
                     resp = client.get(f"{self.server_without_gc_url}/metrics")
                     if resp.status_code == 200:
@@ -193,7 +205,9 @@ class ProfileCollector:
             p95, p99 = self._calculate_percentiles(latencies)
 
             # Check for recent GC events
-            gc_triggered = any(t > current_time - self.profile_interval for t in gc_events)
+            gc_triggered = any(
+                t > current_time - self.profile_interval for t in gc_events
+            )
 
             # Use server's actual metrics for cpu, mem, disk, net
             return {
@@ -207,7 +221,9 @@ class ProfileCollector:
                 "rps": rps,
                 "p95": p95,
                 "p99": p99,
-                "gc_triggered": server_metrics.get("gc_triggered", gc_triggered),
+                "gc_triggered": server_metrics.get(
+                    "gc_triggered", gc_triggered
+                ),
                 "server": server,
             }
 
@@ -230,9 +246,13 @@ class ProfileCollector:
 
                 try:
                     with httpx.Client(timeout=5.0) as client:
-                        client.post(f"{self.metrics_server_url}/api/metrics", json=metrics_with_gc)
                         client.post(
-                            f"{self.metrics_server_url}/api/metrics", json=metrics_without_gc
+                            f"{self.metrics_server_url}/api/metrics",
+                            json=metrics_with_gc,
+                        )
+                        client.post(
+                            f"{self.metrics_server_url}/api/metrics",
+                            json=metrics_without_gc,
                         )
                 except Exception:
                     pass
@@ -258,7 +278,8 @@ def on_locust_init(environment, **kwargs):
         )
 
         profile_collector = ProfileCollector(
-            profile_interval=profile_interval, metrics_server_url=metrics_server_url
+            profile_interval=profile_interval,
+            metrics_server_url=metrics_server_url,
         )
         profile_collector.start()
 
@@ -276,7 +297,14 @@ def on_locust_quit(environment, **kwargs):
 # made by Locust
 @events.request.add_listener
 def on_request(
-    request_type, name, response_time, response_length, response, context, exception, **kwargs
+    request_type,
+    name,
+    response_time,
+    response_length,
+    response,
+    context,
+    exception,
+    **kwargs,
 ):
     global profile_collector
 
@@ -297,16 +325,18 @@ def on_request(
                 except Exception:
                     pass
 
-            profile_collector.record_request(server, response_time, gc_triggered)
+            profile_collector.record_request(
+                server, response_time, gc_triggered
+            )
 
 
 @tag("with_gc")
 class ServerWithGCUser(HttpUser):
     """Load test user for the server WITH NeuroGC. Use --tags with_gc to run only this."""
-    
+
     host = config.get("locust", {}).get("host_with_gc", "http://localhost:8001")
     wait_time = between(0.1, 0.5)
-    
+
     # Skip this user class if TARGET_SERVERS is set to "without_gc"
     weight = 0 if TARGET_SERVERS == "without_gc" else 1
 
@@ -333,7 +363,9 @@ class ServerWithGCUser(HttpUser):
     @task(2)
     def network_heavy(self):
         with self.client.get(
-            "/network-heavy", catch_response=True, name="[with_gc] /network-heavy"
+            "/network-heavy",
+            catch_response=True,
+            name="[with_gc] /network-heavy",
         ) as response:
             if response.status_code == 200:
                 response.success()
@@ -352,7 +384,9 @@ class ServerWithGCUser(HttpUser):
 
     @task(1)
     def health_check(self):
-        with self.client.get("/health", catch_response=True, name="[with_gc] /health") as response:
+        with self.client.get(
+            "/health", catch_response=True, name="[with_gc] /health"
+        ) as response:
             if response.status_code == 200:
                 response.success()
             else:
@@ -362,10 +396,12 @@ class ServerWithGCUser(HttpUser):
 @tag("without_gc")
 class ServerWithoutGCUser(HttpUser):
     """Load test user for the server WITHOUT NeuroGC. Use --tags without_gc to run only this."""
-    
-    host = config.get("locust", {}).get("host_without_gc", "http://localhost:8002")
+
+    host = config.get("locust", {}).get(
+        "host_without_gc", "http://localhost:8002"
+    )
     wait_time = between(0.1, 0.5)
-    
+
     # Skip this user class if TARGET_SERVERS is set to "with_gc"
     weight = 0 if TARGET_SERVERS == "with_gc" else 1
 
@@ -382,7 +418,9 @@ class ServerWithoutGCUser(HttpUser):
     @task(3)
     def memory_heavy(self):
         with self.client.get(
-            "/memory-heavy", catch_response=True, name="[without_gc] /memory-heavy"
+            "/memory-heavy",
+            catch_response=True,
+            name="[without_gc] /memory-heavy",
         ) as response:
             if response.status_code == 200:
                 response.success()
@@ -392,7 +430,9 @@ class ServerWithoutGCUser(HttpUser):
     @task(2)
     def network_heavy(self):
         with self.client.get(
-            "/network-heavy", catch_response=True, name="[without_gc] /network-heavy"
+            "/network-heavy",
+            catch_response=True,
+            name="[without_gc] /network-heavy",
         ) as response:
             if response.status_code == 200:
                 response.success()

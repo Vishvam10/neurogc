@@ -53,14 +53,16 @@ class MetricsStore:
             self.with_gc_latest = metrics
             self.with_gc_history.append(metrics)
             if len(self.with_gc_history) > self.max_history:
-                self.with_gc_history = self.with_gc_history[-self.max_history:]
+                self.with_gc_history = self.with_gc_history[-self.max_history :]
             if metrics.get("gc_triggered"):
                 self.gc_count_with += 1
         elif server == "without_gc":
             self.without_gc_latest = metrics
             self.without_gc_history.append(metrics)
             if len(self.without_gc_history) > self.max_history:
-                self.without_gc_history = self.without_gc_history[-self.max_history:]
+                self.without_gc_history = self.without_gc_history[
+                    -self.max_history :
+                ]
             if metrics.get("gc_triggered"):
                 self.gc_count_without += 1
 
@@ -99,12 +101,16 @@ class ConnectionManager:
     async def connect(self, websocket: WebSocket) -> None:
         await websocket.accept()
         self.active_connections.append(websocket)
-        print(f"[Dashboard] Client connected. Total: {len(self.active_connections)}")
+        print(
+            f"[Dashboard] Client connected. Total: {len(self.active_connections)}"
+        )
 
     def disconnect(self, websocket: WebSocket) -> None:
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
-        print(f"[Dashboard] Client disconnected. Total: {len(self.active_connections)}")
+        print(
+            f"[Dashboard] Client disconnected. Total: {len(self.active_connections)}"
+        )
 
     async def broadcast(self, message: dict) -> None:
         if not self.active_connections:
@@ -126,20 +132,22 @@ def load_csv_metrics(filepath: str) -> list[dict]:
     with open(filepath, "r", newline="") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            metrics.append({
-                "time": float(row["timestamp"]),
-                "server": row["server"],
-                "cpu": float(row["cpu"]),
-                "mem": float(row["mem"]),
-                "disk_read": float(row["disk_read"]),
-                "disk_write": float(row["disk_write"]),
-                "net_sent": float(row["net_sent"]),
-                "net_recv": float(row["net_recv"]),
-                "rps": float(row["rps"]),
-                "p95": float(row["p95"]),
-                "p99": float(row["p99"]),
-                "gc_triggered": row["gc_triggered"].lower() == "true",
-            })
+            metrics.append(
+                {
+                    "time": float(row["timestamp"]),
+                    "server": row["server"],
+                    "cpu": float(row["cpu"]),
+                    "mem": float(row["mem"]),
+                    "disk_read": float(row["disk_read"]),
+                    "disk_write": float(row["disk_write"]),
+                    "net_sent": float(row["net_sent"]),
+                    "net_recv": float(row["net_recv"]),
+                    "rps": float(row["rps"]),
+                    "p95": float(row["p95"]),
+                    "p99": float(row["p99"]),
+                    "gc_triggered": row["gc_triggered"].lower() == "true",
+                }
+            )
     return metrics
 
 
@@ -156,7 +164,9 @@ def create_dashboard_server(
         while True:
             try:
                 latest = metrics_store.get_latest()
-                await connection_manager.broadcast({"type": "metrics_update", "data": latest})
+                await connection_manager.broadcast(
+                    {"type": "metrics_update", "data": latest}
+                )
             except Exception as e:
                 print(f"[Dashboard] Broadcast error: {e}")
 
@@ -180,7 +190,10 @@ def create_dashboard_server(
             metrics_pair = []
             current_time = all_metrics[idx]["time"]
 
-            while idx < total and abs(all_metrics[idx]["time"] - current_time) < 0.5:
+            while (
+                idx < total
+                and abs(all_metrics[idx]["time"] - current_time) < 0.5
+            ):
                 metrics_pair.append(all_metrics[idx])
                 idx += 1
 
@@ -189,7 +202,9 @@ def create_dashboard_server(
 
             try:
                 latest = metrics_store.get_latest()
-                await connection_manager.broadcast({"type": "metrics_update", "data": latest})
+                await connection_manager.broadcast(
+                    {"type": "metrics_update", "data": latest}
+                )
             except Exception as e:
                 print(f"[Dashboard] Broadcast error: {e}")
 
@@ -203,7 +218,9 @@ def create_dashboard_server(
 
         if replay_file:
             if not os.path.exists(replay_file):
-                print(f"[Dashboard] Error: Replay file not found: {replay_file}")
+                print(
+                    f"[Dashboard] Error: Replay file not found: {replay_file}"
+                )
                 yield
                 return
 
@@ -236,7 +253,9 @@ def create_dashboard_server(
         for ui_path in ui_paths:
             if ui_path.exists():
                 return HTMLResponse(content=ui_path.read_text())
-        return HTMLResponse(content="<h1>UI not found</h1><p>ui.html is missing</p>")
+        return HTMLResponse(
+            content="<h1>UI not found</h1><p>ui.html is missing</p>"
+        )
 
     @app.get("/config")
     async def get_config_endpoint():
@@ -290,24 +309,30 @@ def create_dashboard_server(
                 "profile_interval": cfg.profile_interval,
                 "gc_threshold": cfg.gc_threshold,
             }
-            await websocket.send_json({
-                "type": "initial",
-                "data": metrics_store.get_history(60),
-                "config": config_dict,
-            })
+            await websocket.send_json(
+                {
+                    "type": "initial",
+                    "data": metrics_store.get_history(60),
+                    "config": config_dict,
+                }
+            )
 
             while True:
                 try:
-                    data = await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
+                    data = await asyncio.wait_for(
+                        websocket.receive_text(), timeout=30.0
+                    )
 
                     try:
                         message = json.loads(data)
                         if message.get("type") == "get_history":
                             limit = message.get("limit", 60)
-                            await websocket.send_json({
-                                "type": "history",
-                                "data": metrics_store.get_history(limit),
-                            })
+                            await websocket.send_json(
+                                {
+                                    "type": "history",
+                                    "data": metrics_store.get_history(limit),
+                                }
+                            )
                     except json.JSONDecodeError:
                         pass
 

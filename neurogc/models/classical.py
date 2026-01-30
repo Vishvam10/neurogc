@@ -20,11 +20,11 @@ def _import_sklearn():
     if sklearn is None:
         try:
             import sklearn as sk
+
             sklearn = sk
         except ImportError:
             raise ImportError(
-                "scikit-learn is required for classical models. "
-                "Install with: pip install scikit-learn"
+                "scikit-learn is required for classical models. Install with : uv add scikit-learn"
             )
     return sklearn
 
@@ -46,7 +46,9 @@ class ClassicalDataset:
         if "gc_triggered" in self.df.columns:
             self.df["gc_triggered"] = self.df["gc_triggered"].astype(int)
 
-        self.raw_features = self.df[self.feature_columns].values.astype(np.float32)
+        self.raw_features = self.df[self.feature_columns].values.astype(
+            np.float32
+        )
 
         self.feature_means: Optional[np.ndarray] = None
         self.feature_stds: Optional[np.ndarray] = None
@@ -55,7 +57,9 @@ class ClassicalDataset:
             self.feature_means = self.raw_features.mean(axis=0)
             self.feature_stds = self.raw_features.std(axis=0)
             self.feature_stds[self.feature_stds == 0] = 1.0
-            self.raw_features = (self.raw_features - self.feature_means) / self.feature_stds
+            self.raw_features = (
+                self.raw_features - self.feature_means
+            ) / self.feature_stds
 
         self._create_features_and_targets()
 
@@ -66,7 +70,9 @@ class ClassicalDataset:
         cpu_factor = df["cpu"].values / 100.0
         gc_recent = df["gc_triggered"].astype(float).values
         targets = np.clip(
-            0.4 * mem_pressure + 0.3 * cpu_factor + 0.3 * (1 - gc_recent * 0.5), 0.0, 1.0
+            0.4 * mem_pressure + 0.3 * cpu_factor + 0.3 * (1 - gc_recent * 0.5),
+            0.0,
+            1.0,
         ).astype(np.float32)
 
         X_list = []
@@ -82,14 +88,16 @@ class ClassicalDataset:
             max_features = window.max(axis=0)
             trend_features = window[-1] - window[0]
 
-            all_features = np.concatenate([
-                flat_features,
-                mean_features,
-                std_features,
-                min_features,
-                max_features,
-                trend_features,
-            ])
+            all_features = np.concatenate(
+                [
+                    flat_features,
+                    mean_features,
+                    std_features,
+                    min_features,
+                    max_features,
+                    trend_features,
+                ]
+            )
 
             X_list.append(all_features)
             y_list.append(targets[i])
@@ -100,7 +108,9 @@ class ClassicalDataset:
     def get_data(self) -> tuple[np.ndarray, np.ndarray]:
         return self.X, self.y
 
-    def get_normalization_params(self) -> tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+    def get_normalization_params(
+        self,
+    ) -> tuple[Optional[np.ndarray], Optional[np.ndarray]]:
         return self.feature_means, self.feature_stds
 
 
@@ -137,7 +147,10 @@ class ClassicalPredictor(BaseGCPredictor):
 
     def _create_model(self):
         _import_sklearn()
-        from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
+        from sklearn.ensemble import (
+            GradientBoostingRegressor,
+            RandomForestRegressor,
+        )
 
         algorithm = self.config.algorithm
 
@@ -157,6 +170,7 @@ class ClassicalPredictor(BaseGCPredictor):
         elif algorithm == "xgboost":
             try:
                 import xgboost as xgb
+
                 return xgb.XGBRegressor(
                     n_estimators=self.config.n_estimators,
                     max_depth=self.config.max_depth or 6,
@@ -182,19 +196,23 @@ class ClassicalPredictor(BaseGCPredictor):
         max_features = window.max(axis=0)
         trend_features = window[-1] - window[0]
 
-        return np.concatenate([
-            flat_features,
-            mean_features,
-            std_features,
-            min_features,
-            max_features,
-            trend_features,
-        ])
+        return np.concatenate(
+            [
+                flat_features,
+                mean_features,
+                std_features,
+                min_features,
+                max_features,
+                trend_features,
+            ]
+        )
 
     def train(self, data_path: Path, **kwargs) -> TrainingResult:
         start_time = time.time()
 
-        dataset = ClassicalDataset(str(data_path), lookback=self.config.lookback)
+        dataset = ClassicalDataset(
+            str(data_path), lookback=self.config.lookback
+        )
         X, y = dataset.get_data()
 
         if len(X) == 0:
@@ -208,12 +226,16 @@ class ClassicalPredictor(BaseGCPredictor):
         predictions = self._model.predict(X)
         mse = np.mean((predictions - y) ** 2)
 
-        self._feature_means, self._feature_stds = dataset.get_normalization_params()
+        self._feature_means, self._feature_stds = (
+            dataset.get_normalization_params()
+        )
         self._is_loaded = True
 
         training_time = time.time() - start_time
 
-        print(f"[Classical] Trained {self.config.algorithm} on {len(X)} samples")
+        print(
+            f"[Classical] Trained {self.config.algorithm} on {len(X)} samples"
+        )
 
         return TrainingResult(
             epochs=1,
@@ -241,10 +263,14 @@ class ClassicalPredictor(BaseGCPredictor):
             },
             "norm_params": {
                 "feature_means": (
-                    self._feature_means.tolist() if self._feature_means is not None else None
+                    self._feature_means.tolist()
+                    if self._feature_means is not None
+                    else None
                 ),
                 "feature_stds": (
-                    self._feature_stds.tolist() if self._feature_stds is not None else None
+                    self._feature_stds.tolist()
+                    if self._feature_stds is not None
+                    else None
                 ),
             },
         }
@@ -295,7 +321,10 @@ class ClassicalPredictor(BaseGCPredictor):
         return float(np.clip(prediction, 0.0, 1.0))
 
     def can_predict(self) -> bool:
-        return len(self._buffer) >= self.config.lookback and self._model is not None
+        return (
+            len(self._buffer) >= self.config.lookback
+            and self._model is not None
+        )
 
     def add_metrics(self, metrics: dict) -> None:
         features = np.array(
@@ -307,7 +336,9 @@ class ClassicalPredictor(BaseGCPredictor):
         self._buffer.clear()
 
     def get_feature_importance(self) -> Optional[dict[str, float]]:
-        if self._model is None or not hasattr(self._model, "feature_importances_"):
+        if self._model is None or not hasattr(
+            self._model, "feature_importances_"
+        ):
             return None
 
         importances = self._model.feature_importances_
@@ -318,7 +349,7 @@ class ClassicalPredictor(BaseGCPredictor):
 
         for t in range(lookback):
             for f in INPUT_FEATURES:
-                feature_names.append(f"{f}_t-{lookback-t}")
+                feature_names.append(f"{f}_t-{lookback - t}")
 
         for stat in ["mean", "std", "min", "max", "trend"]:
             for f in INPUT_FEATURES:
@@ -342,11 +373,22 @@ class ClassicalPredictor(BaseGCPredictor):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Train or test Classical ML GC predictor")
-    parser.add_argument("--train", type=str, help="Path to CSV file for training")
-    parser.add_argument("--model", type=str, default="gc_model_classical.pkl", help="Model path")
-    parser.add_argument("--algorithm", type=str, default="random_forest",
-                        choices=ClassicalPredictor.SUPPORTED_ALGORITHMS, help="Algorithm")
+    parser = argparse.ArgumentParser(
+        description="Train or test Classical ML GC predictor"
+    )
+    parser.add_argument(
+        "--train", type=str, help="Path to CSV file for training"
+    )
+    parser.add_argument(
+        "--model", type=str, default="gc_model_classical.pkl", help="Model path"
+    )
+    parser.add_argument(
+        "--algorithm",
+        type=str,
+        default="random_forest",
+        choices=ClassicalPredictor.SUPPORTED_ALGORITHMS,
+        help="Algorithm",
+    )
     parser.add_argument("--test", action="store_true", help="Test the model")
 
     args = parser.parse_args()
@@ -370,9 +412,18 @@ if __name__ == "__main__":
         try:
             predictor = ClassicalPredictor()
             predictor.load(Path(args.model))
-            sample = {"cpu": 45.0, "mem": 60.0, "disk_read": 1e6, "disk_write": 5e5,
-                      "net_sent": 1e5, "net_recv": 2e5, "rps": 100.0, "p95": 50.0,
-                      "p99": 100.0, "gc_triggered": False}
+            sample = {
+                "cpu": 45.0,
+                "mem": 60.0,
+                "disk_read": 1e6,
+                "disk_write": 5e5,
+                "net_sent": 1e5,
+                "net_recv": 2e5,
+                "rps": 100.0,
+                "p95": 50.0,
+                "p99": 100.0,
+                "gc_triggered": False,
+            }
             for _ in range(predictor.config.lookback):
                 predictor.add_metrics(sample)
             print(f"GC Urgency Prediction: {predictor.predict():.4f}")
