@@ -1,4 +1,6 @@
+import argparse
 import asyncio
+import csv
 import json
 import os
 import time
@@ -10,6 +12,19 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+
+# Parse command line arguments
+parser = argparse.ArgumentParser(description="NeuroGC Metrics Server")
+parser.add_argument(
+    "--replay",
+    "-r",
+    type=str,
+    default=None,
+    help="Path to CSV file for replay mode (e.g., benchmark.csv)",
+)
+args, _ = parser.parse_known_args()
+
+REPLAY_FILE = args.replay
 
 
 def load_config(config_path: str = "config.json") -> dict:
@@ -137,11 +152,7 @@ async def broadcast_metrics_loop():
 
     while True:
         try:
-            # Broadcast latest metrics to all connected clients
             latest = metrics_store.get_latest()
-            # #region agent log
-            import json as _json; open("/Users/vishvam.sundararajan/Desktop/Projects/neurogc/.cursor/debug.log", "a").write(_json.dumps({"location": "metrics_server.py:broadcast", "message": "Broadcasting", "data": {"with_gc_mem": latest.get("with_gc", {}).get("mem") if latest.get("with_gc") else None, "without_gc_mem": latest.get("without_gc", {}).get("mem") if latest.get("without_gc") else None, "history_len_with": len(metrics_store.with_gc_history), "history_len_without": len(metrics_store.without_gc_history)}, "hypothesisId": "C", "timestamp": time.time()}) + "\n")
-            # #endregion
             await connection_manager.broadcast({"type": "metrics_update", "data": latest})
         except Exception as e:
             print(f"[MetricsServer] Broadcast error: {e}")
@@ -149,14 +160,93 @@ async def broadcast_metrics_loop():
         await asyncio.sleep(profile_interval)
 
 
+def load_csv_metrics(filepath: str) -> list[dict]:
+    metrics = []
+    with open(filepath, "r", newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            metrics.append(
+                {
+                    "time": float(row["timestamp"]),
+                    "server": row["server"],
+                    "cpu": float(row["cpu"]),
+                    "mem": float(row["mem"]),
+                    "disk_read": float(row["disk_read"]),
+                    "disk_write": float(row["disk_write"]),
+                    "net_sent": float(row["net_sent"]),
+                    "net_recv": float(row["net_recv"]),
+                    "rps": float(row["rps"]),
+                    "p95": float(row["p95"]),
+                    "p99": float(row["p99"]),
+                    "gc_triggered": row["gc_triggered"].lower() == "true",
+                }
+            )
+    return metrics
+
+
+async def replay_from_csv(filepath: str):
+    """Replay mode: stream metrics from a saved CSV file."""
+    profile_interval = config.get("profile_interval", 1.0)
+
+    print(f"[MetricsServer] Loading metrics from {filepath}")
+    all_metrics = load_csv_metrics(filepath)
+    print(f"[MetricsServer] Loaded {len(all_metrics)} metrics entries")
+
+    if not all_metrics:
+        print("[MetricsServer] No metrics to replay")
+        return
+
+    # Group metrics by pairs (with_gc and without_gc at same timestamp)
+    # CSV has alternating rows: with_gc, without_gc, with_gc, without_gc...
+    idx = 0
+    total = len(all_metrics)
+
+    while idx < total:
+        # Get the pair of metrics (with_gc and without_gc)
+        metrics_pair = []
+        current_time = all_metrics[idx]["time"]
+
+        # Collect all metrics with similar timestamp (within 0.1s)
+        while idx < total and abs(all_metrics[idx]["time"] - current_time) < 0.5:
+            metrics_pair.append(all_metrics[idx])
+            idx += 1
+
+        # Add metrics to store
+        for m in metrics_pair:
+            metrics_store.add_metrics(m)
+
+        # Broadcast to clients
+        try:
+            latest = metrics_store.get_latest()
+            await connection_manager.broadcast({"type": "metrics_update", "data": latest})
+        except Exception as e:
+            print(f"[MetricsServer] Broadcast error: {e}")
+
+        await asyncio.sleep(profile_interval)
+
+    print("[MetricsServer] Replay finished. Metrics will remain visible.")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    broadcast_task = asyncio.create_task(broadcast_metrics_loop())
-    print(f"[MetricsServer] Starting on port {config['server_ports']['metrics_server']}")
+    port = config["server_ports"]["metrics_server"]
+
+    if REPLAY_FILE:
+        if not os.path.exists(REPLAY_FILE):
+            print(f"[MetricsServer] Error: Replay file not found: {REPLAY_FILE}")
+            yield
+            return
+
+        print(f"[MetricsServer] Starting in REPLAY mode on port {port}")
+        print(f"[MetricsServer] Replaying from: {REPLAY_FILE}")
+        background_task = asyncio.create_task(replay_from_csv(REPLAY_FILE))
+    else:
+        print(f"[MetricsServer] Starting in LIVE mode on port {port}")
+        background_task = asyncio.create_task(broadcast_metrics_loop())
 
     yield
 
-    broadcast_task.cancel()
+    background_task.cancel()
     print("[MetricsServer] Shutting down")
 
 
@@ -186,11 +276,7 @@ async def get_config():
 @app.post("/api/metrics")
 async def receive_metrics(metrics: MetricsData):
     metrics_dict = metrics.model_dump()
-    # #region agent log
-    import json as _json; open("/Users/vishvam.sundararajan/Desktop/Projects/neurogc/.cursor/debug.log", "a").write(_json.dumps({"location": "metrics_server.py:receive_metrics", "message": "Received metrics", "data": {"server": metrics.server, "mem": metrics.mem, "cpu": metrics.cpu}, "hypothesisId": "C", "timestamp": time.time()}) + "\n")
-    # #endregion
     metrics_store.add_metrics(metrics_dict)
-
     return {"status": "ok", "server": metrics.server}
 
 
