@@ -16,7 +16,7 @@ NeuroGC learns application behavior patterns and triggers garbage collection pro
 - [Replay Mode](#replay-mode)
 - [Configuration](#configuration)
 - [Project Structure](#project-structure)
-- [Development](#development)
+- [Contributing](#contributing)
 - [Extending NeuroGC](#extending-neurogc)
 - [Benchmarks](#benchmarks)
 - [License](#license)
@@ -285,6 +285,51 @@ neurogc/
 └── README.md
 ```
 
+### Extending NeuroGC
+
+#### Adding a Custom Model
+
+1. Create a new file in `neurogc/models/` :
+
+  ```python
+  # neurogc/models/my_model.py
+
+  from neurogc.models import register_model
+  from neurogc.models.base import BaseGCPredictor, ModelMetadata
+
+  @register_model("my_model")
+  class MyPredictor(BaseGCPredictor):
+      @property
+      def metadata(self) -> ModelMetadata:
+          return ModelMetadata(
+              name="my_model",
+              version="1.0.0",
+              description="My custom GC predictor"
+          )
+
+      def train(self, data_path, **kwargs):
+          # Training logic
+          pass
+
+      def predict(self) -> float:
+          # Return GC urgency 0.0-1.0
+          pass
+
+      # ... implement other required methods
+  ```
+
+2. Import in `neurogc/models/__init__.py`:
+
+  ```python
+  from neurogc.models.my_model import MyPredictor
+  ```
+
+3. Use your model:
+
+  ```bash
+  python server_with_neurogc.py --model my_model
+  ```
+
 ### Benchmarks
 
 Benchmark results are stored in the [`/benchmarks`](./benchmarks/) folder, organized by model type and date.
@@ -348,78 +393,10 @@ The analysis script generates:
 - RPS over time chart
 - README.md with performance summary table
 
-### Development
+### Contributing
 
-#### Extending NeuroGC (Adding a Custom Model)
-
-1. Create a new file in `neurogc/models/`:
-
-  ```python
-  # neurogc/models/my_model.py
-
-  from neurogc.models import register_model
-  from neurogc.models.base import BaseGCPredictor, ModelMetadata
-
-  @register_model("my_model")
-  class MyPredictor(BaseGCPredictor):
-      @property
-      def metadata(self) -> ModelMetadata:
-          return ModelMetadata(
-              name="my_model",
-              version="1.0.0",
-              description="My custom GC predictor"
-          )
-
-      def train(self, data_path, **kwargs):
-          # Training logic
-          pass
-
-      def predict(self) -> float:
-          # Return GC urgency 0.0-1.0
-          pass
-
-      # ... implement other required methods
-  ```
-
-2. Import in `neurogc/models/__init__.py`:
-
-  ```python
-  from neurogc.models.my_model import MyPredictor
-  ```
-
-3. Use your model:
-
-  ```bash
-  python server_with_neurogc.py --model my_model
-  ```
-
-#### Code Style Guidelines
-
-- Follow PEP8 conventions (enforced by Ruff)
-- Prefer type hints for all public methods and models
-- Keep model logic isolated in neurogc/models/
-- Avoid side effects in server entry points (server_with_neurogc.py, metrics_server.py)
-- Centralize configuration changes in config.json
-
-#### Linting and Formatting
-
-Kindly lint and format code before raising a PR
-
-```bash
-# Check for issues
-ruff check --config pyproject.toml
-
-# Auto-fix
-ruff check --fix --config pyproject.toml
-
-# Format
-ruff format --config pyproject.toml
-```
+Please refer to [CONTRIBUTING](CONTRIBUTING.md) to know more
 
 ### License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-### Contributors
-
-[Vishvam S](https://github.com/Vishvam10)
