@@ -27,6 +27,15 @@ csv_path = config.get("csv_path", "profiler_data.csv").replace(".csv", "_with_gc
 gc_predictor = None
 gc_trigger_count = 0
 model_available = False
+_last_gc_triggered = False
+
+
+def get_and_reset_gc_flag() -> bool:
+    """Get the last GC triggered status and reset it."""
+    global _last_gc_triggered
+    flag = _last_gc_triggered
+    _last_gc_triggered = False
+    return flag
 
 
 def init_model():
@@ -50,7 +59,7 @@ def init_model():
 
 
 async def gc_check_loop():
-    global gc_trigger_count
+    global gc_trigger_count, _last_gc_triggered
 
     profile_interval = config.get("profile_interval", 1.0)
     gc_threshold = config.get("gc_threshold", 0.7)
@@ -72,6 +81,7 @@ async def gc_check_loop():
                     if urgency > gc_threshold:
                         gc.collect()
                         gc_trigger_count += 1
+                        _last_gc_triggered = True
                         print(
                             f"[NeuroGC] GC triggered (urgency: {urgency:.4f}, threshold: {gc_threshold})"
                         )
@@ -158,6 +168,7 @@ async def cpu_heavy():
         "primes_found": len(primes),
         "hash_result": data[:16],
         "duration_ms": (time.time() - start_time) * 1000,
+        "gc_triggered": get_and_reset_gc_flag(),
     }
 
 
@@ -193,6 +204,7 @@ async def memory_heavy():
         "lists_created": len(data_list),
         "dict_keys": len(large_dict),
         "duration_ms": (time.time() - start_time) * 1000,
+        "gc_triggered": get_and_reset_gc_flag(),
     }
 
 
@@ -224,6 +236,7 @@ async def network_heavy():
         "results": results,
         "payload_size": len(json_str),
         "duration_ms": (time.time() - start_time) * 1000,
+        "gc_triggered": get_and_reset_gc_flag(),
     }
 
 
@@ -273,6 +286,7 @@ async def io_heavy():
         "files_created": files_created,
         "total_bytes": total_bytes,
         "duration_ms": (time.time() - start_time) * 1000,
+        "gc_triggered": get_and_reset_gc_flag(),
     }
 
 

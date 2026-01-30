@@ -24,9 +24,22 @@ config = load_config()
 profiler = Profiler(profile_interval=config.get("profile_interval", 1.0))
 csv_path = config.get("csv_path", "profiler_data.csv")
 
+# Track GC count to detect automatic GC events
+_last_gc_count = 0
+
+
 def get_gc_count() -> int:
     stats = gc.get_stats()
     return sum(s.get("collections", 0) for s in stats)
+
+
+def check_gc_occurred() -> bool:
+    """Check if automatic GC has occurred since last check."""
+    global _last_gc_count
+    current = get_gc_count()
+    occurred = current > _last_gc_count
+    _last_gc_count = current
+    return occurred
 
 
 async def profiler_save_loop():
@@ -108,6 +121,7 @@ async def cpu_heavy():
         "primes_found": len(primes),
         "hash_result": data[:16],
         "duration_ms": (time.time() - start_time) * 1000,
+        "gc_triggered": check_gc_occurred(),
     }
 
 
@@ -143,6 +157,7 @@ async def memory_heavy():
         "lists_created": len(data_list),
         "dict_keys": len(large_dict),
         "duration_ms": (time.time() - start_time) * 1000,
+        "gc_triggered": check_gc_occurred(),
     }
 
 
@@ -173,6 +188,7 @@ async def network_heavy():
         "results": results,
         "payload_size": len(json_str),
         "duration_ms": (time.time() - start_time) * 1000,
+        "gc_triggered": check_gc_occurred(),
     }
 
 
@@ -220,6 +236,7 @@ async def io_heavy():
         "files_created": files_created,
         "total_bytes": total_bytes,
         "duration_ms": (time.time() - start_time) * 1000,
+        "gc_triggered": check_gc_occurred(),
     }
 
 

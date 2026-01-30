@@ -133,13 +133,15 @@ connection_manager = ConnectionManager()
 
 
 async def broadcast_metrics_loop():
-    """Background task to broadcast metrics to WebSocket clients."""
     profile_interval = config.get("profile_interval", 1.0)
 
     while True:
         try:
             # Broadcast latest metrics to all connected clients
             latest = metrics_store.get_latest()
+            # #region agent log
+            import json as _json; open("/Users/vishvam.sundararajan/Desktop/Projects/neurogc/.cursor/debug.log", "a").write(_json.dumps({"location": "metrics_server.py:broadcast", "message": "Broadcasting", "data": {"with_gc_mem": latest.get("with_gc", {}).get("mem") if latest.get("with_gc") else None, "without_gc_mem": latest.get("without_gc", {}).get("mem") if latest.get("without_gc") else None, "history_len_with": len(metrics_store.with_gc_history), "history_len_without": len(metrics_store.without_gc_history)}, "hypothesisId": "C", "timestamp": time.time()}) + "\n")
+            # #endregion
             await connection_manager.broadcast({"type": "metrics_update", "data": latest})
         except Exception as e:
             print(f"[MetricsServer] Broadcast error: {e}")
@@ -184,6 +186,9 @@ async def get_config():
 @app.post("/api/metrics")
 async def receive_metrics(metrics: MetricsData):
     metrics_dict = metrics.model_dump()
+    # #region agent log
+    import json as _json; open("/Users/vishvam.sundararajan/Desktop/Projects/neurogc/.cursor/debug.log", "a").write(_json.dumps({"location": "metrics_server.py:receive_metrics", "message": "Received metrics", "data": {"server": metrics.server, "mem": metrics.mem, "cpu": metrics.cpu}, "hypothesisId": "C", "timestamp": time.time()}) + "\n")
+    # #endregion
     metrics_store.add_metrics(metrics_dict)
 
     return {"status": "ok", "server": metrics.server}
