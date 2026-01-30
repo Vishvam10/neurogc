@@ -1,8 +1,7 @@
 ## NeuroGC
 
-NeuroGC is an experimental system that tries to improve Python garbage collection using deep 
-learning by modeling application behavior and proactively scheduling GC to mitigate latency 
-spikes and memory pressure.
+NeuroGC is an experimental system that models application behavior using deep learning to 
+proactively schedule Python garbage collection, reducing latency spikes and memory pressure.
 
 ### Table of Contents
 
