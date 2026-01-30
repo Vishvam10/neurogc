@@ -1,7 +1,8 @@
 ## NeuroGC
 
-An attempt to make a smarter garbage collection optimization system for Python applications using deep learning.
-NeuroGC learns application behavior patterns and triggers garbage collection proactively to minimize latency spikes and memory pressure.
+NeuroGC is an experimental system that tries to improve Python garbage collection using deep 
+learning by modeling application behavior and proactively scheduling GC to mitigate latency 
+spikes and memory pressure.
 
 ### Table of Contents
 
