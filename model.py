@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from neurogc.models.lstm import (
     load_model,
     train_model,
