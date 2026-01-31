@@ -236,6 +236,7 @@ class TransformerPredictor(BaseGCPredictor):
             metrics={"dataset_size": len(dataset)},
         )
 
+
     def save(self, path: Path) -> None:
         if self._model is None:
             raise RuntimeError("No model to save.")

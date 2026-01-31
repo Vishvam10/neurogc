@@ -204,6 +204,10 @@ def calculate_stats(data: list[dict]) -> dict:
     return {
         "avg_cpu": avg("cpu"),
         "avg_mem": avg("mem"),
+        "avg_disk_read": avg("disk_read"),
+        "avg_disk_write": avg("disk_write"),
+        "avg_net_sent": avg("net_sent"),
+        "avg_net_recv": avg("net_recv"),
         "avg_rps": avg("rps"),
         "avg_p95": avg("p95"),
         "avg_p99": avg("p99"),
@@ -489,10 +493,13 @@ def calculate_improvement(
         diff = with_val - without_val
         pct = (diff / without_val) * 100
 
+    if abs(pct) < 0.05:
+        return "0.0%"
+
     if pct > 0:
-        return f"+{pct:.1f}%"
+        return f"🟢 +{pct:.1f}%"
     else:
-        return f"{pct:.1f}%"
+        return f"🔴 {pct:.1f}%"
 
 
 def generate_readme(
@@ -515,11 +522,17 @@ def generate_readme(
 
 | Metric | Without NeuroGC | With NeuroGC | Improvement |
 | ------ | --------------- | ------------ | ----------- |
-| Avg Memory (%) | {stats_without_gc.get("avg_mem", 0):.1f} | {stats_with_gc.get("avg_mem", 0):.1f} | {calculate_improvement(stats_with_gc.get("avg_mem", 0), stats_without_gc.get("avg_mem", 0), lower_is_better=True)} |
-| P95 Latency (ms) | {stats_without_gc.get("avg_p95", 0):.1f} | {stats_with_gc.get("avg_p95", 0):.1f} | {calculate_improvement(stats_with_gc.get("avg_p95", 0), stats_without_gc.get("avg_p95", 0), lower_is_better=True)} |
-| P99 Latency (ms) | {stats_without_gc.get("avg_p99", 0):.1f} | {stats_with_gc.get("avg_p99", 0):.1f} | {calculate_improvement(stats_with_gc.get("avg_p99", 0), stats_without_gc.get("avg_p99", 0), lower_is_better=True)} |
-| GC Events | {stats_without_gc.get("gc_events", 0)} | {stats_with_gc.get("gc_events", 0)} | {calculate_improvement(stats_with_gc.get("gc_events", 0), stats_without_gc.get("gc_events", 0), lower_is_better=False)} |
-| Avg RPS | {stats_without_gc.get("avg_rps", 0):.1f} | {stats_with_gc.get("avg_rps", 0):.1f} | {calculate_improvement(stats_with_gc.get("avg_rps", 0), stats_without_gc.get("avg_rps", 0), lower_is_better=False)} |
+| Avg CPU (%) | {stats_without_gc.get("avg_cpu", 0):.1f} | {stats_with_gc.get("avg_cpu", 0):.1f} | {calculate_improvement(stats_with_gc.get("avg_cpu", 0), stats_without_gc.get("avg_cpu", 0), True)} |
+| Avg Memory (%) | {stats_without_gc.get("avg_mem", 0):.1f} | {stats_with_gc.get("avg_mem", 0):.1f} | {calculate_improvement(stats_with_gc.get("avg_mem", 0), stats_without_gc.get("avg_mem", 0), True)} |
+| Avg Disk Read | {stats_without_gc.get("avg_disk_read", 0):.2f} | {stats_with_gc.get("avg_disk_read", 0):.2f} | {calculate_improvement(stats_with_gc.get("avg_disk_read", 0), stats_without_gc.get("avg_disk_read", 0), True)} |
+| Avg Disk Write | {stats_without_gc.get("avg_disk_write", 0):.2f} | {stats_with_gc.get("avg_disk_write", 0):.2f} | {calculate_improvement(stats_with_gc.get("avg_disk_write", 0), stats_without_gc.get("avg_disk_write", 0), True)} |
+| Avg Net Sent | {stats_without_gc.get("avg_net_sent", 0):.2f} | {stats_with_gc.get("avg_net_sent", 0):.2f} | {calculate_improvement(stats_with_gc.get("avg_net_sent", 0), stats_without_gc.get("avg_net_sent", 0), True)} |
+| Avg Net Recv | {stats_without_gc.get("avg_net_recv", 0):.2f} | {stats_with_gc.get("avg_net_recv", 0):.2f} | {calculate_improvement(stats_with_gc.get("avg_net_recv", 0), stats_without_gc.get("avg_net_recv", 0), True)} |
+| P95 Latency (ms) | {stats_without_gc.get("avg_p95", 0):.1f} | {stats_with_gc.get("avg_p95", 0):.1f} | {calculate_improvement(stats_with_gc.get("avg_p95", 0), stats_without_gc.get("avg_p95", 0), True)} |
+| P99 Latency (ms) | {stats_without_gc.get("avg_p99", 0):.1f} | {stats_with_gc.get("avg_p99", 0):.1f} | {calculate_improvement(stats_with_gc.get("avg_p99", 0), stats_without_gc.get("avg_p99", 0), True)} |
+| Avg RPS | {stats_without_gc.get("avg_rps", 0):.1f} | {stats_with_gc.get("avg_rps", 0):.1f} | {calculate_improvement(stats_with_gc.get("avg_rps", 0), stats_without_gc.get("avg_rps", 0), False)} |
+| GC Events | {stats_without_gc.get("gc_events", 0)} | {stats_with_gc.get("gc_events", 0)} | {calculate_improvement(stats_with_gc.get("gc_events", 0), stats_without_gc.get("gc_events", 0), False)} |
+
 
 ## Visualizations
 

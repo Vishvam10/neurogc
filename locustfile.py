@@ -98,7 +98,6 @@ class ProfileCollector:
         print("[ProfileCollector] Stopped")
 
     def save_to_csv(self, filepath: str = "benchmark.csv") -> None:
-        """Save all collected metrics to a CSV file."""
         if not self._all_metrics:
             print("[ProfileCollector] No metrics to save")
             return
@@ -160,11 +159,9 @@ class ProfileCollector:
                     self._gc_events_without_gc.append(time.time())
 
     def _calculate_percentiles(self, latencies: deque) -> tuple[float, float]:
-        """Calculate p95 and p99 latencies using shared utility."""
         return calculate_percentiles(list(latencies))
 
     def _fetch_server_metrics(self) -> None:
-        """Fetch metrics directly from each server's /metrics endpoint."""
         try:
             with httpx.Client(timeout=2.0) as client:
                 try:
