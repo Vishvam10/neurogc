@@ -14,35 +14,35 @@ from neurogc.utils import calculate_percentiles
 
 @dataclass
 class ProfileMetrics:
-    time: float = 0.0
-    cpu: float = 0.0
-    mem: float = 0.0
-    disk_read: float = 0.0
-    disk_write: float = 0.0
-    net_sent: float = 0.0
-    net_recv: float = 0.0
-    rps: float = 0.0
-    p95: float = 0.0
-    p99: float = 0.0
-    gc_triggered: bool = False
+    time : float = 0.0
+    cpu : float = 0.0
+    mem : float = 0.0
+    disk_read : float = 0.0
+    disk_write : float = 0.0
+    net_sent : float = 0.0
+    net_recv : float = 0.0
+    rps : float = 0.0
+    p95 : float = 0.0
+    p99 : float = 0.0
+    gc_triggered : bool = False
 
     def to_dict(self) -> dict:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: dict) -> "ProfileMetrics":
+    def from_dict(cls, data : dict) -> "ProfileMetrics":
         return cls(
-            **{k: v for k, v in data.items() if k in cls.__dataclass_fields__}
+            **{k : v for k, v in data.items() if k in cls.__dataclass_fields__}
         )
 
 
 class Profiler:
-    def __init__(self, profile_interval: float = 1.0):
+    def __init__(self, profile_interval : float = 1.0):
         self.profile_interval = profile_interval
         self._running = False
         self._lock = threading.Lock()
 
-        self._latencies: deque = deque(maxlen=10000)
+        self._latencies : deque = deque(maxlen=10000)
         self._request_count = 0
         self._last_rps_time = time.time()
         self._last_request_count = 0
@@ -50,10 +50,10 @@ class Profiler:
         self._gc_count_before = 0
         self._gc_triggered = False
 
-        self._disk_io_start: Optional[psutil._common.sdiskio] = None
-        self._net_io_start: Optional[psutil._common.snetio] = None
-        self._last_disk_io: Optional[psutil._common.sdiskio] = None
-        self._last_net_io: Optional[psutil._common.snetio] = None
+        self._disk_io_start : Optional[psutil._common.sdiskio] = None
+        self._net_io_start : Optional[psutil._common.snetio] = None
+        self._last_disk_io : Optional[psutil._common.sdiskio] = None
+        self._last_net_io : Optional[psutil._common.snetio] = None
         self._last_snapshot_time = time.time()
 
         self._current_metrics = ProfileMetrics()
@@ -77,7 +77,7 @@ class Profiler:
         stats = gc.get_stats()
         return sum(s.get("collections", 0) for s in stats)
 
-    def record_request(self, latency_ms: float) -> None:
+    def record_request(self, latency_ms : float) -> None:
         with self._lock:
             self._latencies.append(latency_ms)
             self._request_count += 1
@@ -166,7 +166,7 @@ class Profiler:
         with self._lock:
             self._latencies.clear()
 
-    def save_to_csv(self, filepath: str, overwrite: bool = False) -> None:
+    def save_to_csv(self, filepath : str, overwrite : bool = False) -> None:
         metrics = self.get_metrics()
         metrics_dict = metrics.to_dict()
 
@@ -180,7 +180,7 @@ class Profiler:
             writer.writerow(metrics_dict)
 
     @staticmethod
-    def load_from_csv(filepath: str) -> list[ProfileMetrics]:
+    def load_from_csv(filepath : str) -> list[ProfileMetrics]:
         metrics_list = []
 
         if not os.path.exists(filepath):
@@ -190,17 +190,17 @@ class Profiler:
             reader = csv.DictReader(f)
             for row in reader:
                 converted = {
-                    "time": float(row["time"]),
-                    "cpu": float(row["cpu"]),
-                    "mem": float(row["mem"]),
-                    "disk_read": float(row["disk_read"]),
-                    "disk_write": float(row["disk_write"]),
-                    "net_sent": float(row["net_sent"]),
-                    "net_recv": float(row["net_recv"]),
-                    "rps": float(row["rps"]),
-                    "p95": float(row["p95"]),
-                    "p99": float(row["p99"]),
-                    "gc_triggered": row["gc_triggered"].lower() == "true",
+                    "time" : float(row["time"]),
+                    "cpu" : float(row["cpu"]),
+                    "mem" : float(row["mem"]),
+                    "disk_read" : float(row["disk_read"]),
+                    "disk_write" : float(row["disk_write"]),
+                    "net_sent" : float(row["net_sent"]),
+                    "net_recv" : float(row["net_recv"]),
+                    "rps" : float(row["rps"]),
+                    "p95" : float(row["p95"]),
+                    "p99" : float(row["p99"]),
+                    "gc_triggered" : row["gc_triggered"].lower() == "true",
                 }
                 metrics_list.append(ProfileMetrics.from_dict(converted))
 
@@ -209,11 +209,11 @@ class Profiler:
 
 class BackgroundProfiler(Profiler):
     def __init__(
-        self, profile_interval: float = 1.0, csv_path: Optional[str] = None
+        self, profile_interval : float = 1.0, csv_path : Optional[str] = None
     ):
         super().__init__(profile_interval)
         self._csv_path = csv_path
-        self._thread: Optional[threading.Thread] = None
+        self._thread : Optional[threading.Thread] = None
 
     def start(self) -> None:
         super().start()
@@ -257,17 +257,17 @@ if __name__ == "__main__":
         time.sleep(0.5)
 
     metrics = profiler.get_metrics()
-    print("\nCurrent Metrics:\n")
-    print(f"  CPU: {metrics.cpu:.1f}%")
-    print(f"  Memory: {metrics.mem:.1f}%")
-    print(f"  Disk Read: {metrics.disk_read:.0f} B/s")
-    print(f"  Disk Write: {metrics.disk_write:.0f} B/s")
-    print(f"  Net Sent: {metrics.net_sent:.0f} B/s")
-    print(f"  Net Recv: {metrics.net_recv:.0f} B/s")
-    print(f"  RPS: {metrics.rps:.2f}")
-    print(f"  P95: {metrics.p95:.2f} ms")
-    print(f"  P99: {metrics.p99:.2f} ms")
-    print(f"  GC Triggered: {metrics.gc_triggered}")
+    print("\nCurrent Metrics :\n")
+    print(f"-- CPU : {metrics.cpu:.1f}%")
+    print(f"-- Memory : {metrics.mem:.1f}%")
+    print(f"-- Disk Read : {metrics.disk_read:.0f} B/s")
+    print(f"-- Disk Write : {metrics.disk_write:.0f} B/s")
+    print(f"-- Net Sent : {metrics.net_sent:.0f} B/s")
+    print(f"-- Net Recv : {metrics.net_recv:.0f} B/s")
+    print(f"-- RPS : {metrics.rps:.2f}")
+    print(f"-- P95 : {metrics.p95:.2f} ms")
+    print(f"-- P99 : {metrics.p99:.2f} ms")
+    print(f"-- GC Triggered : {metrics.gc_triggered}")
 
     profiler.stop()
     print("\nDemo complete. Check demo_metrics.csv for saved data\n")

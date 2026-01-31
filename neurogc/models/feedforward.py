@@ -234,6 +234,7 @@ class FeedforwardPredictor(BaseGCPredictor):
         )
         print(f"[Feedforward] Model saved to {path}")
 
+
     def load(self, path: Path) -> None:
         checkpoint = torch.load(
             str(path), map_location=self._device, weights_only=False
