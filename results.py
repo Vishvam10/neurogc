@@ -117,7 +117,7 @@ def main():
 
         df_runs = pd.DataFrame(runs).sort_values("time").reset_index(drop=True)
 
-        md_sections.append(f"\n## Architecture: `{arch_dir.name}`\n")
+        md_sections.append(f"\n## Architecture : `{arch_dir.name}`\n")
 
         # ---- Absolute metrics table ----
         abs_rows = []
@@ -147,7 +147,7 @@ def main():
                     row.append(format_delta(m, delta))
                 delta_rows.append(row)
 
-            md_sections.append("\n### Run-over-Run Changes\n")
+            md_sections.append("\n### Run-Over-Run Changes\n")
             md_sections.append(
                 md_table(
                     ["Run"] + [METRIC_LABELS[m] for m in METRICS],
@@ -176,7 +176,7 @@ def main():
             )
         )
 
-        md_sections.append("\n### 🏆 Winners\n")
+        md_sections.append("\n## 🏆 Winners\n")
         for m, direction in GOOD_DIRECTION.items():
             idx = (
                 df_final[m].idxmin()
