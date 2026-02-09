@@ -4,8 +4,8 @@
 
 **Raw Data:** [benchmark.csv](./benchmark.csv)
 
-- Training Load : `locust -f locustfile.py --headless ...`
-- Evaluation Load : `locust -f locustfile.py --headless ...`
+- Training Load : `locust -f locustfile.py --headless -u 100 -r 10 --run-time 5m`
+- Evaluation Load : `locust -f locustfile.py --headless -u 100 -r 10 --run-time 1m`
 
 ## Performance Summary
 
