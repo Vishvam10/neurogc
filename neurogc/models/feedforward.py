@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 
-from neurogc.config import FeedforwardParams, get_config
+from neurogc.config import FeedforwardParams, get_config, load_config
 from neurogc.models import register_model
 from neurogc.models.base import BaseGCPredictor, TrainingResult
 from neurogc.utils import INPUT_FEATURES
@@ -124,7 +124,6 @@ class FeedforwardPredictor(BaseGCPredictor):
         self._feature_stds: Optional[np.ndarray] = None
         self._device = "cuda" if torch.cuda.is_available() else "cpu"
 
-
     def train(self, data_path: Path, **kwargs) -> TrainingResult:
         start_time = time.time()
 
@@ -223,7 +222,6 @@ class FeedforwardPredictor(BaseGCPredictor):
         )
         print(f"[Feedforward] Model saved to {path}")
 
-
     def load(self, path: Path) -> None:
         checkpoint = torch.load(
             str(path), map_location=self._device, weights_only=False
@@ -293,6 +291,43 @@ class FeedforwardPredictor(BaseGCPredictor):
         self._buffer.clear()
 
 
+def train_model(
+    csv_path: str,
+    config_path: str = "config.json",
+    model_save_path: Optional[str] = None,
+) -> tuple[object, float, dict]:
+    config = load_config(config_path)
+    predictor = FeedforwardPredictor(config.models.feedforward)
+
+    result: TrainingResult = predictor.train(Path(csv_path))
+
+    save_path = model_save_path or config.model_path
+    predictor.save(Path(save_path))
+
+    norm_params = {
+        "feature_means": (
+            predictor._feature_means.tolist()
+            if predictor._feature_means is not None
+            else None
+        ),
+        "feature_stds": (
+            predictor._feature_stds.tolist()
+            if predictor._feature_stds is not None
+            else None
+        ),
+        "lookback": predictor.config.lookback,
+    }
+
+    return predictor._model, result.final_loss, norm_params
+
+
+def load_model(model_path: str, device: str = "cpu") -> FeedforwardPredictor:
+    predictor = FeedforwardPredictor()
+    predictor._device = device
+    predictor.load(Path(model_path))
+    return predictor
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -313,14 +348,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.train:
-        print(f"Training Feedforward model from {args.train}...")
+        print(f"Training Feedforward model from {args.train} ...")
         predictor = FeedforwardPredictor()
         result = predictor.train(Path(args.train))
         predictor.save(Path(args.model))
-        print(f"Training complete. Final loss: {result.final_loss:.6f}")
+        print(f"Training complete. Final loss : {result.final_loss:.6f}")
 
     elif args.test:
-        print("Testing model...")
+        print("Testing model ...")
         try:
             predictor = FeedforwardPredictor()
             predictor.load(Path(args.model))
@@ -338,7 +373,7 @@ if __name__ == "__main__":
             }
             for _ in range(predictor.config.lookback):
                 predictor.add_metrics(sample)
-            print(f"GC Urgency Prediction: {predictor.predict():.4f}")
+            print(f"GC Urgency Prediction : {predictor.predict():.4f}")
         except FileNotFoundError:
             print(f"Model file {args.model} not found.")
 

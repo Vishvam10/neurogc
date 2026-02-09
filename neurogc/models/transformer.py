@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 
-from neurogc.config import TransformerParams, get_config
+from neurogc.config import TransformerParams, get_config, load_config
 from neurogc.models import register_model
 from neurogc.models.base import BaseGCPredictor, TrainingResult
 from neurogc.utils import INPUT_FEATURES
@@ -224,7 +224,6 @@ class TransformerPredictor(BaseGCPredictor):
             metrics={"dataset_size": len(dataset)},
         )
 
-
     def save(self, path: Path) -> None:
         if self._model is None:
             raise RuntimeError("No model to save.")
@@ -327,6 +326,43 @@ class TransformerPredictor(BaseGCPredictor):
 
     def reset(self) -> None:
         self._buffer.clear()
+
+
+def train_model(
+    csv_path: str,
+    config_path: str = "config.json",
+    model_save_path: Optional[str] = None,
+) -> tuple[object, float, dict]:
+    config = load_config(config_path)
+    predictor = TransformerPredictor(config.models.transformer)
+
+    result: TrainingResult = predictor.train(Path(csv_path))
+
+    save_path = model_save_path or config.model_path
+    predictor.save(Path(save_path))
+
+    norm_params = {
+        "feature_means": (
+            predictor._feature_means.tolist()
+            if predictor._feature_means is not None
+            else None
+        ),
+        "feature_stds": (
+            predictor._feature_stds.tolist()
+            if predictor._feature_stds is not None
+            else None
+        ),
+        "sequence_length": predictor.config.sequence_length,
+    }
+
+    return predictor._model, result.final_loss, norm_params
+
+
+def load_model(model_path: str, device: str = "cpu") -> TransformerPredictor:
+    predictor = TransformerPredictor()
+    predictor._device = device
+    predictor.load(Path(model_path))
+    return predictor
 
 
 if __name__ == "__main__":
