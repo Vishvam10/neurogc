@@ -88,7 +88,6 @@ class Config:
     locust: LocustConfig = field(default_factory=LocustConfig)
     default_model: str = "lstm"
     models: ModelsConfig = field(default_factory=ModelsConfig)
-    lstm_params: LSTMParams = field(default_factory=LSTMParams)
 
     def get_model_config(self, model_name: str) -> Any:
         model_configs = {
@@ -214,11 +213,7 @@ def load_config(path: str = "config.json") -> Config:
     with open(config_path, "r") as f:
         data = json.load(f)
 
-    lstm_params = _parse_lstm_params(data.get("lstm_params", {}))
-
     models_data = data.get("models", {})
-    if not models_data:
-        models_data = {"lstm": data.get("lstm_params", {})}
     models = _parse_models_config(models_data)
 
     _config = Config(
@@ -231,7 +226,6 @@ def load_config(path: str = "config.json") -> Config:
         locust=_parse_locust(data.get("locust", {})),
         default_model=data.get("default_model", "lstm"),
         models=models,
-        lstm_params=lstm_params,
     )
 
     _config_path = path

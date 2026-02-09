@@ -42,13 +42,18 @@
 
 ## ML Model Metadata
 
-| Property        | Value                                                    |
-| --------------- | -------------------------------------------------------- |
-| Model Name      | lstm                                                     |
-| Version         | unknown                                                  |
-| Description     | LSTM-based GC predictor for temporal pattern recognition |
-| Input Features  | cpu, mem, disk_read, disk_write, net_sent, net_recv      |
-| Sequence Length | 1                                                        |
+```json
+{
+  "name": "lstm",
+  "input_size": 10,
+  "hidden_size": 64,
+  "num_layers": 2,
+  "sequence_length": 10,
+  "epochs": 100,
+  "learning_rate": 0.001,
+  "batch_size": 32
+}
+```
 
 ## System Information
 

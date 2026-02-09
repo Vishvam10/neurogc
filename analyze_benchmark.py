@@ -81,59 +81,9 @@ def get_system_info() -> dict:
     }
 
 
-def get_model_metadata(
-    model_name: str, model_path: str = "gc_model.pth"
-) -> dict:
-    metadata = {
-        "name": model_name,
-        "version": "unknown",
-        "description": "",
-        "input_features": [
-            "cpu",
-            "mem",
-            "disk_read",
-            "disk_write",
-            "net_sent",
-            "net_recv",
-        ],
-        "sequence_length": 1,
-    }
-
-    # Try to load metadata from model file
-    if HAS_TORCH and os.path.exists(model_path):
-        try:
-            checkpoint = torch.load(
-                model_path, map_location="cpu", weights_only=False
-            )
-            if "metadata" in checkpoint:
-                model_meta = checkpoint["metadata"]
-                metadata.update(
-                    {
-                        "name": model_meta.get("name", model_name),
-                        "version": model_meta.get("version", "unknown"),
-                        "description": model_meta.get("description", ""),
-                        "input_features": model_meta.get(
-                            "input_features", metadata["input_features"]
-                        ),
-                        "sequence_length": model_meta.get("sequence_length", 1),
-                    }
-                )
-        except Exception:
-            pass
-
-    # Set default descriptions based on model name
-    if not metadata["description"]:
-        descriptions = {
-            "lstm": "LSTM-based GC predictor for temporal pattern recognition",
-            "transformer": "Transformer-based GC predictor with self-attention",
-            "feedforward": "Feedforward neural network GC predictor",
-            "classical": "Classical ML (Random Forest) GC predictor",
-        }
-        metadata["description"] = descriptions.get(
-            model_name.lower(), f"{model_name} GC predictor"
-        )
-
-    return metadata
+def get_model_config(config: dict, model_name: str) -> dict:
+    models = config.get("models", {})
+    return models.get(model_name, {})
 
 
 def detect_model_from_checkpoint(
@@ -357,7 +307,6 @@ def create_latency_plot(
 def create_gc_events_plot(
     with_gc: list[dict], without_gc: list[dict], output_path: Path
 ) -> None:
-    """Create GC events timeline plot."""
     fig, ax = plt.subplots(figsize=(10, 6))
 
     if with_gc:
@@ -394,7 +343,6 @@ def create_gc_events_plot(
             label="Without NeuroGC",
         )
 
-    # Set x-axis limits
     all_times = []
     if with_gc:
         all_times.extend(normalize_timestamps(with_gc))
@@ -431,7 +379,6 @@ def create_gc_events_plot(
 def create_rps_plot(
     with_gc: list[dict], without_gc: list[dict], output_path: Path
 ) -> None:
-    """Create RPS (requests per second) timeline plot."""
     fig, ax = plt.subplots(figsize=(10, 6))
 
     if with_gc:
@@ -506,12 +453,11 @@ def generate_readme(
     output_dir: Path,
     stats_with_gc: dict,
     stats_without_gc: dict,
-    model_metadata: dict,
     system_info: dict,
     benchmark_date: datetime,
     csv_filename: str,
+    model_config: dict,
 ) -> None:
-    """Generate README.md for the benchmark."""
     readme_content = f"""# Benchmark Results
 
 **Date:** {benchmark_date.strftime("%B %d, %Y at %H:%M")}
@@ -554,13 +500,9 @@ def generate_readme(
 
 ## ML Model Metadata
 
-| Property | Value |
-| -------- | ----- |
-| Model Name | {model_metadata.get("name", "N/A")} |
-| Version | {model_metadata.get("version", "N/A")} |
-| Description | {model_metadata.get("description", "N/A")} |
-| Input Features | {", ".join(model_metadata.get("input_features", []))} |
-| Sequence Length | {model_metadata.get("sequence_length", "N/A")} |
+```json
+{json.dumps(model_config, indent=2)}
+```
 
 ## System Information
 
@@ -622,6 +564,11 @@ def analyze_benchmark(
             model_name = config.get("default_model", "unknown")
         print(f"Auto-detected model: {model_name}")
 
+    model_config = {
+        "name": model_name,
+        **get_model_config(config, model_name),
+    }
+
     # Determine output directory
     benchmark_date = datetime.now()
     if output_dir is None:
@@ -653,7 +600,6 @@ def analyze_benchmark(
     stats_without_gc = calculate_stats(without_gc)
 
     # Get model metadata and system info
-    model_metadata = get_model_metadata(model_name)
     system_info = get_system_info()
 
     # Generate visualizations
@@ -678,10 +624,10 @@ def analyze_benchmark(
         output_dir,
         stats_with_gc,
         stats_without_gc,
-        model_metadata,
         system_info,
         benchmark_date,
         "benchmark.csv",
+        model_config,
     )
 
     print(f"\nAnalysis complete! Results saved to: {output_dir}")
