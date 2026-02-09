@@ -56,14 +56,5 @@
       "max_depth": null,
       "lookback": 5
     }
-  },
-  "lstm_params": {
-    "input_size": 10,
-    "hidden_size": 64,
-    "num_layers": 2,
-    "sequence_length": 10,
-    "epochs": 100,
-    "learning_rate": 0.001,
-    "batch_size": 32
   }
 }
