@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 
-from neurogc.config import LSTMParams, get_config
+from neurogc.config import LSTMParams, get_config, load_config
 from neurogc.models import register_model
 from neurogc.models.base import BaseGCPredictor, TrainingResult
 from neurogc.utils import INPUT_FEATURES
@@ -304,9 +304,8 @@ def train_model(
     config_path: str = "config.json",
     model_save_path: Optional[str] = None,
 ) -> tuple[LSTMNetwork, float, dict]:
-    from neurogc.config import load_config as load_cfg
 
-    config = load_cfg(config_path)
+    config = load_config(config_path)
     predictor = LSTMPredictor(config.models.lstm)
 
     result = predictor.train(Path(csv_path))

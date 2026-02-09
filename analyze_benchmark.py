@@ -464,6 +464,9 @@ def generate_readme(
 
 **Raw Data:** [{csv_filename}](./{csv_filename})
 
+- Training Load : `locust -f locustfile.py --headless ...`
+- Evaluation Load : `locust -f locustfile.py --headless ...`
+
 ## Performance Summary
 
 | Metric | Without NeuroGC | With NeuroGC | Improvement |

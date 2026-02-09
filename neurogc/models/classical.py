@@ -7,7 +7,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-from neurogc.config import ClassicalParams, get_config
+from neurogc.config import ClassicalParams, get_config, load_config
 from neurogc.models import register_model
 from neurogc.models.base import BaseGCPredictor, TrainingResult
 from neurogc.utils import INPUT_FEATURES
@@ -358,6 +358,42 @@ class ClassicalPredictor(BaseGCPredictor):
         return base_importance
 
 
+def train_model(
+    csv_path: str,
+    config_path: str = "config.json",
+    model_save_path: Optional[str] = None,
+) -> tuple[object, float, dict]:
+    config = load_config(config_path)
+    predictor = ClassicalPredictor(config.models.classical)
+
+    result: TrainingResult = predictor.train(Path(csv_path))
+
+    save_path = model_save_path or config.model_path
+    predictor.save(Path(save_path))
+
+    norm_params = {
+        "feature_means": (
+            predictor._feature_means.tolist()
+            if predictor._feature_means is not None
+            else None
+        ),
+        "feature_stds": (
+            predictor._feature_stds.tolist()
+            if predictor._feature_stds is not None
+            else None
+        ),
+        "lookback": predictor.config.lookback,
+    }
+
+    return predictor._model, result.final_loss, norm_params
+
+
+def load_model(model_path: str) -> ClassicalPredictor:
+    predictor = ClassicalPredictor()
+    predictor.load(Path(model_path))
+    return predictor
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -382,21 +418,21 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.train:
-        print(f"Training {args.algorithm} model from {args.train}...")
+        print(f"Training {args.algorithm} model from {args.train} ...")
         config = ClassicalParams(algorithm=args.algorithm)
         predictor = ClassicalPredictor(config)
         result = predictor.train(Path(args.train))
         predictor.save(Path(args.model))
-        print(f"Training complete. MSE: {result.final_loss:.6f}")
+        print(f"Training complete. MSE : {result.final_loss:.6f}")
 
         importance = predictor.get_feature_importance()
         if importance:
-            print("\nFeature Importance:")
+            print("\nFeature Importance :")
             for k, v in sorted(importance.items(), key=lambda x: -x[1]):
                 print(f"  {k}: {v:.4f}")
 
     elif args.test:
-        print("Testing model...")
+        print("Testing model ...")
         try:
             predictor = ClassicalPredictor()
             predictor.load(Path(args.model))
@@ -414,7 +450,7 @@ if __name__ == "__main__":
             }
             for _ in range(predictor.config.lookback):
                 predictor.add_metrics(sample)
-            print(f"GC Urgency Prediction: {predictor.predict():.4f}")
+            print(f"GC Urgency Prediction : {predictor.predict():.4f}")
         except FileNotFoundError:
             print(f"Model file {args.model} not found.")
 
