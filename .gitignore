@@ -1,4 +1,6 @@
 *.csv
+!training_data.csv
+!more_training_data.csv
 !benchmark*.csv
 *.pth
 
