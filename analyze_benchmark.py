@@ -12,6 +12,9 @@ from typing import Optional
 import matplotlib.pyplot as plt
 import psutil
 
+from tabulate import tabulate 
+
+
 # Try to import torch for model metadata extraction
 try:
     import torch
@@ -448,7 +451,6 @@ def calculate_improvement(
     else:
         return f"🔴 {pct:.1f}%"
 
-
 def generate_readme(
     output_dir: Path,
     stats_with_gc: dict,
@@ -458,7 +460,152 @@ def generate_readme(
     csv_filename: str,
     model_config: dict,
 ) -> None:
-    readme_content = f"""# Benchmark Results
+    # 1. Prepare Performance Summary Data
+    performance_data = [
+        [
+            "Avg CPU (%)",
+            f"{stats_without_gc.get('avg_cpu', 0):.1f}",
+            f"{stats_with_gc.get('avg_cpu', 0):.1f}",
+            calculate_improvement(
+                stats_with_gc.get("avg_cpu", 0),
+                stats_without_gc.get("avg_cpu", 0),
+                True,
+            ),
+        ],
+        [
+            "Avg Memory (%)",
+            f"{stats_without_gc.get('avg_mem', 0):.1f}",
+            f"{stats_with_gc.get('avg_mem', 0):.1f}",
+            calculate_improvement(
+                stats_with_gc.get("avg_mem", 0),
+                stats_without_gc.get("avg_mem", 0),
+                True,
+            ),
+        ],
+        [
+            "Avg Disk Read",
+            f"{stats_without_gc.get('avg_disk_read', 0):.2f}",
+            f"{stats_with_gc.get('avg_disk_read', 0):.2f}",
+            calculate_improvement(
+                stats_with_gc.get("avg_disk_read", 0),
+                stats_without_gc.get("avg_disk_read", 0),
+                True,
+            ),
+        ],
+        [
+            "Avg Disk Write",
+            f"{stats_without_gc.get('avg_disk_write', 0):.2f}",
+            f"{stats_with_gc.get('avg_disk_write', 0):.2f}",
+            calculate_improvement(
+                stats_with_gc.get("avg_disk_write", 0),
+                stats_without_gc.get("avg_disk_write", 0),
+                True,
+            ),
+        ],
+        [
+            "Avg Net Sent",
+            f"{stats_without_gc.get('avg_net_sent', 0):.2f}",
+            f"{stats_with_gc.get('avg_net_sent', 0):.2f}",
+            calculate_improvement(
+                stats_with_gc.get("avg_net_sent", 0),
+                stats_without_gc.get("avg_net_sent", 0),
+                True,
+            ),
+        ],
+        [
+            "Avg Net Recv",
+            f"{stats_without_gc.get('avg_net_recv', 0):.2f}",
+            f"{stats_with_gc.get('avg_net_recv', 0):.2f}",
+            calculate_improvement(
+                stats_with_gc.get("avg_net_recv", 0),
+                stats_without_gc.get("avg_net_recv", 0),
+                True,
+            ),
+        ],
+        [
+            "P95 Latency (ms)",
+            f"{stats_without_gc.get('avg_p95', 0):.1f}",
+            f"{stats_with_gc.get('avg_p95', 0):.1f}",
+            calculate_improvement(
+                stats_with_gc.get("avg_p95", 0),
+                stats_without_gc.get("avg_p95", 0),
+                True,
+            ),
+        ],
+        [
+            "P99 Latency (ms)",
+            f"{stats_without_gc.get('avg_p99', 0):.1f}",
+            f"{stats_with_gc.get('avg_p99', 0):.1f}",
+            calculate_improvement(
+                stats_with_gc.get("avg_p99", 0),
+                stats_without_gc.get("avg_p99", 0),
+                True,
+            ),
+        ],
+        [
+            "Avg RPS",
+            f"{stats_without_gc.get('avg_rps', 0):.1f}",
+            f"{stats_with_gc.get('avg_rps', 0):.1f}",
+            calculate_improvement(
+                stats_with_gc.get("avg_rps", 0),
+                stats_without_gc.get("avg_rps", 0),
+                False,
+            ),
+        ],
+        [
+            "GC Events",
+            stats_without_gc.get("gc_events", 0),
+            stats_with_gc.get("gc_events", 0),
+            calculate_improvement(
+                stats_with_gc.get("gc_events", 0),
+                stats_without_gc.get("gc_events", 0),
+                False,
+            ),
+        ],
+    ]
+
+    # 2. Prepare System Info Data
+    system_data = [
+        ["Operating System", system_info.get("os", "N/A")],
+        ["Architecture", system_info.get("architecture", "N/A")],
+        ["CPU", system_info.get("cpu_model", "N/A")],
+        [
+            "CPU Cores",
+            f"{system_info.get('cpu_cores', 'N/A')} (logical: {system_info.get('cpu_cores_logical', 'N/A')})",
+        ],
+        ["Memory", f"{system_info.get('memory_gb', 'N/A')} GB"],
+        ["Disk", f"{system_info.get('disk_gb', 'N/A')} GB"],
+        ["Python Version", system_info.get("python_version", "N/A")],
+    ]
+
+    # 3. Prepare Benchmark Details Data
+    detail_data = [
+        ["Total Samples (with GC)", stats_with_gc.get("total_samples", 0)],
+        [
+            "Total Samples (without GC)",
+            stats_without_gc.get("total_samples", 0),
+        ],
+        [
+            "Duration",
+            f"~{max(stats_with_gc.get('total_samples', 0), stats_without_gc.get('total_samples', 0))} seconds",
+        ],
+    ]
+
+    # Generate Tables
+    perf_table = tabulate(
+        performance_data,
+        headers=["Metric", "Without NeuroGC", "With NeuroGC", "Improvement"],
+        tablefmt="github",
+    )
+    sys_table = tabulate(
+        system_data, headers=["Property", "Value"], tablefmt="github"
+    )
+    detail_table = tabulate(
+        detail_data, headers=["Property", "Value"], tablefmt="github"
+    )
+
+    readme_content = f"""
+# Benchmark Results
 
 **Date:** {benchmark_date.strftime("%B %d, %Y at %H:%M")}
 
@@ -469,19 +616,7 @@ def generate_readme(
 
 ## Performance Summary
 
-| Metric | Without NeuroGC | With NeuroGC | Improvement |
-| ------ | --------------- | ------------ | ----------- |
-| Avg CPU (%) | {stats_without_gc.get("avg_cpu", 0):.1f} | {stats_with_gc.get("avg_cpu", 0):.1f} | {calculate_improvement(stats_with_gc.get("avg_cpu", 0), stats_without_gc.get("avg_cpu", 0), True)} |
-| Avg Memory (%) | {stats_without_gc.get("avg_mem", 0):.1f} | {stats_with_gc.get("avg_mem", 0):.1f} | {calculate_improvement(stats_with_gc.get("avg_mem", 0), stats_without_gc.get("avg_mem", 0), True)} |
-| Avg Disk Read | {stats_without_gc.get("avg_disk_read", 0):.2f} | {stats_with_gc.get("avg_disk_read", 0):.2f} | {calculate_improvement(stats_with_gc.get("avg_disk_read", 0), stats_without_gc.get("avg_disk_read", 0), True)} |
-| Avg Disk Write | {stats_without_gc.get("avg_disk_write", 0):.2f} | {stats_with_gc.get("avg_disk_write", 0):.2f} | {calculate_improvement(stats_with_gc.get("avg_disk_write", 0), stats_without_gc.get("avg_disk_write", 0), True)} |
-| Avg Net Sent | {stats_without_gc.get("avg_net_sent", 0):.2f} | {stats_with_gc.get("avg_net_sent", 0):.2f} | {calculate_improvement(stats_with_gc.get("avg_net_sent", 0), stats_without_gc.get("avg_net_sent", 0), True)} |
-| Avg Net Recv | {stats_without_gc.get("avg_net_recv", 0):.2f} | {stats_with_gc.get("avg_net_recv", 0):.2f} | {calculate_improvement(stats_with_gc.get("avg_net_recv", 0), stats_without_gc.get("avg_net_recv", 0), True)} |
-| P95 Latency (ms) | {stats_without_gc.get("avg_p95", 0):.1f} | {stats_with_gc.get("avg_p95", 0):.1f} | {calculate_improvement(stats_with_gc.get("avg_p95", 0), stats_without_gc.get("avg_p95", 0), True)} |
-| P99 Latency (ms) | {stats_without_gc.get("avg_p99", 0):.1f} | {stats_with_gc.get("avg_p99", 0):.1f} | {calculate_improvement(stats_with_gc.get("avg_p99", 0), stats_without_gc.get("avg_p99", 0), True)} |
-| Avg RPS | {stats_without_gc.get("avg_rps", 0):.1f} | {stats_with_gc.get("avg_rps", 0):.1f} | {calculate_improvement(stats_with_gc.get("avg_rps", 0), stats_without_gc.get("avg_rps", 0), False)} |
-| GC Events | {stats_without_gc.get("gc_events", 0)} | {stats_with_gc.get("gc_events", 0)} | {calculate_improvement(stats_with_gc.get("gc_events", 0), stats_without_gc.get("gc_events", 0), False)} |
-
+{perf_table}
 
 ## Visualizations
 
@@ -509,24 +644,12 @@ def generate_readme(
 
 ## System Information
 
-| Property | Value |
-| -------- | ----- |
-| Operating System | {system_info.get("os", "N/A")} |
-| Architecture | {system_info.get("architecture", "N/A")} |
-| CPU | {system_info.get("cpu_model", "N/A")} |
-| CPU Cores | {system_info.get("cpu_cores", "N/A")} (logical: {system_info.get("cpu_cores_logical", "N/A")}) |
-| Memory | {system_info.get("memory_gb", "N/A")} GB |
-| Disk | {system_info.get("disk_gb", "N/A")} GB |
-| Python Version | {system_info.get("python_version", "N/A")} |
+{sys_table}
 
 ## Benchmark Details
 
-| Property | Value |
-| -------- | ----- |
-| Total Samples (with GC) | {stats_with_gc.get("total_samples", 0)} |
-| Total Samples (without GC) | {stats_without_gc.get("total_samples", 0)} |
-| Duration | ~{max(stats_with_gc.get("total_samples", 0), stats_without_gc.get("total_samples", 0))} seconds |
-"""
+{detail_table} 
+""".strip()
 
     readme_path = output_dir / "README.md"
     with open(readme_path, "w") as f:
@@ -622,7 +745,7 @@ def analyze_benchmark(
     print("  - rps_timeline.png")
 
     # Generate README
-    print("Generating README...")
+    print("Generating README ...")
     generate_readme(
         output_dir,
         stats_with_gc,
