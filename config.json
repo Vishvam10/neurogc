@@ -44,8 +44,8 @@
       "batch_size": 32
     },
     "feedforward": {
-      "hidden_sizes": [64, 32],
-      "lookback": 5,
+      "hidden_sizes": [64, 32, 16, 8],
+      "lookback": 20,
       "epochs": 100,
       "learning_rate": 0.001,
       "batch_size": 32
