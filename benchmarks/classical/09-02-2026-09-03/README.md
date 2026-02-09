@@ -1,26 +1,26 @@
 # Benchmark Results
 
-**Date:** February 09, 2026 at 08:45
+**Date:** February 09, 2026 at 09:03
 
 **Raw Data:** [benchmark.csv](./benchmark.csv)
 
-- Training Load : `locust -f locustfile.py --headless -u 100 -r 10 --run-time 1m`
-- Evaluation Load : `locust -f locustfile.py --headless -u 100 -r 10 --run-time 1m`
+- Training Load : `locust -f locustfile.py --headless ...`
+- Evaluation Load : `locust -f locustfile.py --headless ...`
 
 ## Performance Summary
 
 | Metric           | Without NeuroGC | With NeuroGC | Improvement |
 | ---------------- | --------------- | ------------ | ----------- |
-| Avg CPU (%)      | 44.9            | 42.4         | 🟢 +5.6%    |
-| Avg Memory (%)   | 53.4            | 53.4         | 🟢 +0.1%    |
-| Avg Disk Read    | 3612.88         | 14974.84     | 🔴 -314.5%  |
-| Avg Disk Write   | 6651159.60      | 5976350.41   | 🟢 +10.1%   |
-| Avg Net Sent     | 66004.88        | 83383.95     | 🔴 -26.3%   |
-| Avg Net Recv     | 80518.80        | 102735.16    | 🔴 -27.6%   |
-| P95 Latency (ms) | 3776.0          | 3953.4       | 🔴 -4.7%    |
-| P99 Latency (ms) | 5064.2          | 5383.0       | 🔴 -6.3%    |
-| Avg RPS          | 30.1            | 28.4         | 🔴 -5.7%    |
-| GC Events        | 15              | 17           | 🟢 +13.3%   |
+| Avg CPU (%)      | 39.0            | 39.3         | 🔴 -0.8%    |
+| Avg Memory (%)   | 54.4            | 54.5         | 0.0%        |
+| Avg Disk Read    | 2786.16         | 591.43       | 🟢 +78.8%   |
+| Avg Disk Write   | 6037546.50      | 5408297.63   | 🟢 +10.4%   |
+| Avg Net Sent     | 90606.60        | 67460.24     | 🟢 +25.5%   |
+| Avg Net Recv     | 97007.71        | 74088.75     | 🟢 +23.6%   |
+| P95 Latency (ms) | 3488.8          | 3450.9       | 🟢 +1.1%    |
+| P99 Latency (ms) | 4587.6          | 4786.3       | 🔴 -4.3%    |
+| Avg RPS          | 30.4            | 29.9         | 🔴 -1.6%    |
+| GC Events        | 16              | 19           | 🟢 +18.8%   |
 
 ## Visualizations
 
@@ -68,6 +68,6 @@
 
 | Property                   | Value       |
 | -------------------------- | ----------- |
-| Total Samples (with GC)    | 22          |
-| Total Samples (without GC) | 22          |
-| Duration                   | ~22 seconds |
+| Total Samples (with GC)    | 25          |
+| Total Samples (without GC) | 25          |
+| Duration                   | ~25 seconds |

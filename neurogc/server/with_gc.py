@@ -1,7 +1,9 @@
+import os
+import gc
+import sys
 import argparse
 import asyncio
-import gc
-import os
+
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
@@ -53,6 +55,9 @@ def init_model(
     except Exception as e:
         print(f"[NeuroGC] Failed to load model: {e}")
         _model_available = False
+        # Just leave and fix .. we don't want to benchmark the wrong thing ..
+        # Happened to me quite a few times 😭
+        sys.exit(1)
 
 
 async def gc_check_loop() -> None:
