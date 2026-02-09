@@ -93,14 +93,14 @@ if __name__ == "__main__":
         "--train", type=str, help="Path to CSV file for training"
     )
     parser.add_argument("--config", type=str, default="config.json")
-    parser.add_argument("--model", type=str, default="gc_model.pth")
+    parser.add_argument("--model_path", type=str, default="gc_model.pth")
     parser.add_argument("--test", action="store_true")
 
     args = parser.parse_args()
 
     if args.train:
         print(f"Training {args.arch} model from {args.train} ...")
-        _, loss, _ = train_model(args.arch, args.train, args.config, args.model)
+        _, loss, _ = train_model(args.arch, args.train, args.config, args.model_path)
         print(f"Training complete. Final loss : {loss:.6f}")
 
     elif args.test:
@@ -120,6 +120,6 @@ if __name__ == "__main__":
         prediction = predict(
             sample_metrics,
             arch=args.arch,
-            model_path=args.model,
+            model_path=args.model_path,
         )
         print(f"GC Urgency Prediction : {prediction:.4f}")
