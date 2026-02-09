@@ -3,32 +3,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from neurogc.utils import INPUT_FEATURES
-
-
-@dataclass
-class ModelMetadata:
-    name: str
-    version: str
-    input_features: list[str] = field(
-        default_factory=lambda: INPUT_FEATURES.copy()
-    )
-    sequence_length: int = 1
-    description: str = ""
-    supports_training: bool = True
-    requires_sequence: bool = False
-
-    def to_dict(self) -> dict:
-        return {
-            "name": self.name,
-            "version": self.version,
-            "input_features": self.input_features,
-            "sequence_length": self.sequence_length,
-            "description": self.description,
-            "supports_training": self.supports_training,
-            "requires_sequence": self.requires_sequence,
-        }
-
 
 @dataclass
 class TrainingResult:
@@ -51,11 +25,6 @@ class TrainingResult:
 class BaseGCPredictor(ABC):
     def __init__(self):
         self._is_loaded = False
-
-    @property
-    @abstractmethod
-    def metadata(self) -> ModelMetadata:
-        pass
 
     @property
     def is_loaded(self) -> bool:
@@ -96,16 +65,6 @@ class DummyPredictor(BaseGCPredictor):
         super().__init__()
         self._fixed_value = fixed_value
         self._is_loaded = True
-
-    @property
-    def metadata(self) -> ModelMetadata:
-        return ModelMetadata(
-            name="dummy",
-            version="1.0.0",
-            description="Dummy predictor for testing",
-            supports_training=False,
-            requires_sequence=False,
-        )
 
     def train(self, data_path: Path, **kwargs) -> TrainingResult:
         raise NotImplementedError("DummyPredictor does not support training")

@@ -3,7 +3,6 @@ from typing import Dict, Type
 from neurogc.models.base import (
     BaseGCPredictor,
     DummyPredictor,
-    ModelMetadata,
     TrainingResult,
 )
 
@@ -33,13 +32,6 @@ def list_models() -> list[str]:
     return list(_registry.keys())
 
 
-def get_model_metadata(name: str) -> ModelMetadata:
-    model_class = get_model(name)
-    instance = model_class.__new__(model_class)
-    instance._is_loaded = False
-    return instance.metadata
-
-
 register_model("dummy")(DummyPredictor)
 
 # ruff: noqa: E402
@@ -52,9 +44,7 @@ __all__ = [
     "register_model",
     "get_model",
     "list_models",
-    "get_model_metadata",
     "BaseGCPredictor",
-    "ModelMetadata",
     "TrainingResult",
     "LSTMPredictor",
     "TransformerPredictor",

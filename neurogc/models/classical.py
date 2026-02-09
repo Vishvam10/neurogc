@@ -9,7 +9,7 @@ import pandas as pd
 
 from neurogc.config import ClassicalParams, get_config
 from neurogc.models import register_model
-from neurogc.models.base import BaseGCPredictor, ModelMetadata, TrainingResult
+from neurogc.models.base import BaseGCPredictor, TrainingResult
 from neurogc.utils import INPUT_FEATURES
 
 sklearn = None
@@ -132,18 +132,6 @@ class ClassicalPredictor(BaseGCPredictor):
         self._buffer: deque = deque(maxlen=config.lookback)
         self._feature_means: Optional[np.ndarray] = None
         self._feature_stds: Optional[np.ndarray] = None
-
-    @property
-    def metadata(self) -> ModelMetadata:
-        return ModelMetadata(
-            name="classical",
-            version="1.0.0",
-            input_features=INPUT_FEATURES.copy(),
-            sequence_length=self.config.lookback,
-            description=f"Classical ML predictor ({self.config.algorithm})",
-            supports_training=True,
-            requires_sequence=False,
-        )
 
     def _create_model(self):
         _import_sklearn()

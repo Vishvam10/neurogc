@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader, Dataset
 
 from neurogc.config import LSTMParams, get_config
 from neurogc.models import register_model
-from neurogc.models.base import BaseGCPredictor, ModelMetadata, TrainingResult
+from neurogc.models.base import BaseGCPredictor, TrainingResult
 from neurogc.utils import INPUT_FEATURES
 
 
@@ -123,18 +123,6 @@ class LSTMPredictor(BaseGCPredictor):
         self._feature_means: Optional[np.ndarray] = None
         self._feature_stds: Optional[np.ndarray] = None
         self._device = "cuda" if torch.cuda.is_available() else "cpu"
-
-    @property
-    def metadata(self) -> ModelMetadata:
-        return ModelMetadata(
-            name="lstm",
-            version="1.0.0",
-            input_features=INPUT_FEATURES.copy(),
-            sequence_length=self.config.sequence_length,
-            description="LSTM-based GC urgency predictor using time-series metrics",
-            supports_training=True,
-            requires_sequence=True,
-        )
 
     def train(self, data_path: Path, **kwargs) -> TrainingResult:
         start_time = time.time()
