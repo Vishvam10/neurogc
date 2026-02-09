@@ -295,17 +295,10 @@ neurogc/
   # neurogc/models/my_model.py
 
   from neurogc.models import register_model
-  from neurogc.models.base import BaseGCPredictor, ModelMetadata
+  from neurogc.models.base import BaseGCPredictor
 
   @register_model("my_model")
   class MyPredictor(BaseGCPredictor):
-      @property
-      def metadata(self) -> ModelMetadata:
-          return ModelMetadata(
-              name="my_model",
-              version="1.0.0",
-              description="My custom GC predictor"
-          )
 
       def train(self, data_path, **kwargs):
           # Training logic
