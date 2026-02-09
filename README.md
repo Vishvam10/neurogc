@@ -19,6 +19,7 @@ proactively schedule Python garbage collection, reducing latency spikes and memo
 - [Contributing](#contributing)
 - [Extending NeuroGC](#extending-neurogc)
 - [Benchmarks](#benchmarks)
+- [Results](#results)
 - [License](#license)
 
 ### Overview
@@ -327,6 +328,10 @@ neurogc/
 
 Benchmark results are stored in the [`/benchmarks`](./benchmarks/) folder, organized by model type and date.
 
+### Results
+
+Overall results can be found in [results.md](results.md). This includes absolute and run-over-run metrics across all model architectures with proper [Welch t-tests](https://en.wikipedia.org/wiki/Welch%27s_t-test).
+
 #### Directory Structure
 
 ```
@@ -376,6 +381,9 @@ python analyze_benchmark.py benchmark.csv --model lstm
 
 # Specify custom output directory
 python analyze_benchmark.py benchmark.csv --model transformer --output benchmarks/custom
+
+# Generate run-over-run analysis across model architectures
+python results.py
 ```
 
 The analysis script generates:
