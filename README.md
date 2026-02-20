@@ -6,7 +6,6 @@ proactively schedule Python garbage collection, reducing latency spikes and memo
 ### Table of Contents
 
 - [Overview](#overview)
-- [Architecture](#architecture)
 - [Features](#features)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -279,8 +278,8 @@ neurogc/
 ├── server_with_neurogc.py      # Entry point (thin wrapper)
 ├── server_without_neurogc.py   # Entry point (thin wrapper)
 ├── metrics_server.py           # Entry point (thin wrapper)
-├── model.py                    # Entry point (backward compat)
-├── profiler.py                 # Entry point (backward compat)
+├── model.py                    # Entry point (thin wrapper)
+├── profiler.py                 # Entry point (thin wrapper)
 ├── locustfile.py               # Load testing
 ├── config.json                 # Configuration
 └── README.md
